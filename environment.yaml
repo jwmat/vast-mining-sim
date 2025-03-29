@@ -1,0 +1,4 @@
+name: vast-mining-sim
+dependencies:
+  - gtest=1.14
+  - cpplint
