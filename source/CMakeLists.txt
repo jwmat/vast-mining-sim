@@ -1,4 +1,7 @@
-add_library(vast-mining-sim 
+add_library(vast-mining-sim
+    controller.cpp
+    event.cpp
+    logger.cpp
     random.cpp 
     truck_manager.cpp 
     station_manager.cpp)

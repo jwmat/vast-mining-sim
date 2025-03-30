@@ -3,14 +3,12 @@
 
 #include <stddef.h>  // size_t
 
-#include <chrono>  // NOLINT(build/c++11)
 #include <functional>
 #include <queue>
 #include <utility>
 #include <vector>
 
-using minutes_t = std::chrono::minutes;
-using namespace std::chrono_literals;
+#include "minutes.h"
 
 // Manages station availability
 class StationManager {
@@ -19,9 +17,8 @@ class StationManager {
 
   explicit StationManager(size_t count);
 
-  std::pair<minutes_t, size_t> NextAvailableStation();
-  minutes_t UnloadTruck(size_t id, minutes_t available_time,
-                        minutes_t arrival_time);
+  std::pair<minutes_t, size_t> NextAvailableStation() const;
+  minutes_t UnloadTruck(size_t truck_id, minutes_t arrival_time);
 
  private:
   std::priority_queue<std::pair<minutes_t, size_t>,

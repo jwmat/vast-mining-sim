@@ -31,6 +31,8 @@ if (NOT GTest_FOUND)
   )
 
   FetchContent_MakeAvailable(googletest)
+  
+  add_library(GTest::gtest_main ALIAS gtest_main)
 endif()
 
 include(GoogleTest)

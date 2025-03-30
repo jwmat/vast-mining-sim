@@ -1,50 +1,28 @@
 enable_testing()
 
-option(BUILD_GMOCK OFF)
-option(INSTALL_GTEST OFF)
+function(add_test_executable target)
+  add_executable(${target} ${ARGN})
 
-include(FetchContent)
+  target_link_libraries(${target} 
+    PRIVATE
+      GTest::gtest
+      GTest::gtest_main
+      vast-mining-sim)
 
-FetchContent_Declare(
-  googletest
-  GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG 6910c9d9165801d8827d628cb72eb7ea9dd538c5 # v1.16.0
-)
+  gtest_discover_tests(${target})
+endfunction()
 
-FetchContent_MakeAvailable(googletest)
-include(GoogleTest)
+add_test_executable(test-controller
+  controller.test.cpp)
 
-add_executable(test-main 
-  main.test.cpp)
+add_test_executable(test-logger
+  logger.test.cpp)
 
-target_link_libraries(test-main 
-    gtest_main)
-
-gtest_discover_tests(test-main)
-
-add_executable(test-random 
-  random.test.cpp)
-
-target_link_libraries(test-random
-  gtest_main
-  vast-mining-sim)
-
-gtest_discover_tests(test-random)
-
-add_executable(test-truck-manager
-  truck_manager.test.cpp)
-
-target_link_libraries(test-truck-manager
-  PRIVATE
-    gtest_main vast-mining-sim)
-
-gtest_discover_tests(test-truck-manager)
-
-add_executable(test-station-manager
+add_test_executable(test-station-manager
   station_manager.test.cpp)
 
-target_link_libraries(test-station-manager
-  gtest_main
-  vast-mining-sim)
+add_test_executable(test-random 
+  random.test.cpp)
 
-gtest_discover_tests(test-station-manager)
+add_test_executable(test-truck-manager
+  truck_manager.test.cpp)

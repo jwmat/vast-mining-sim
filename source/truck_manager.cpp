@@ -2,9 +2,12 @@
 
 #include <utility>
 
+#include "event.h"
+#include "logger.h"
+
 TruckManager::TruckManager(size_t count) {
   for (size_t i = 0; i < count; i++) {
-    queue_.push({0min, i});
+    DispatchTruckToMine(i, 0min, 0min);
   }
 }
 
@@ -14,12 +17,17 @@ std::pair<minutes_t, size_t> TruckManager::NextAvailableTruck() {
   if (queue_.empty()) {
     throw std::runtime_error("No trucks available.");
   }
+
   auto next = queue_.top();
   queue_.pop();
   return next;
 }
 
-void TruckManager::DispatchToMine(size_t id, minutes_t time,
-                                  minutes_t duration) {
-  queue_.push({time + duration + kTravelTime, id});
+minutes_t TruckManager::DispatchTruckToMine(size_t truck_id,
+                                            minutes_t start_time,
+                                            minutes_t mine_time) {
+  auto end_time = start_time + mine_time;
+  LogEvent({EventType::Mine, truck_id, std::nullopt, start_time, end_time});
+  queue_.push({end_time, truck_id});
+  return end_time;
 }
