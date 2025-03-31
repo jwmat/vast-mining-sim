@@ -105,7 +105,7 @@ def plot_station_performance(station_stats, ax):
 def main():
     """Main function to load data, process events, and plot results."""
     parser = argparse.ArgumentParser()
-    parser.add_argument("--events", default="events.json", help="Path to events.json")
+    parser.add_argument("--events", help="Path to events.<params>.json")
     args = parser.parse_args()
 
     # Load events from the JSON file

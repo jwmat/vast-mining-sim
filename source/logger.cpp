@@ -1,5 +1,6 @@
 #include "logger.h"
 
+#include <chrono>  // NOLINT(build/c++11)
 #include <iostream>
 #include <ostream>
 #include <sstream>

@@ -27,7 +27,7 @@ TEST(TestStationManager, SingleStationUnloadAndRequeue) {
   EXPECT_EQ(event.end_time, end_time1);
 
   // Ensure the station is next available at the correct time
-  auto [start_time2, station_id2] = manager.NextAvailableStation();
+  auto [start_time2, station_id2] = manager.GetNextAvailableSlot();
   EXPECT_EQ(station_id1, station_id2);
   EXPECT_EQ(start_time2, end_time1);
 }
@@ -68,7 +68,7 @@ TEST(TestStationManager, TwoStations_SelectAndQueueCorrectly) {
   EXPECT_EQ(event2.end_time, end_time2);
 
   // Next available should be station 1 (finished earlier)
-  auto [start_time3, station_id3] = manager.NextAvailableStation();
+  auto [start_time3, station_id3] = manager.GetNextAvailableSlot();
   EXPECT_EQ(station_id3, station2_id);
   EXPECT_EQ(start_time3, end_time2);
 
@@ -90,7 +90,7 @@ TEST(TestStationManager, TwoStations_SelectAndQueueCorrectly) {
 // Ensures StationManager throws when no stations are configured
 TEST(TestStationManager, ThrowsIfNoStationsAvailable) {
   StationManager manager(0);
-  ASSERT_THROW(manager.NextAvailableStation(), std::runtime_error);
+  ASSERT_THROW(manager.GetNextAvailableSlot(), std::runtime_error);
 }
 
 // Ensures that trucks queued at the same station unload in the order they

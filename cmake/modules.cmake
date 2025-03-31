@@ -21,6 +21,7 @@ find_package(GTest CONFIG)
 if (NOT GTest_FOUND)
   option(BUILD_GMOCK OFF)
   option(INSTALL_GTEST OFF)
+  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
   include(FetchContent)
 
@@ -49,4 +50,19 @@ if (NOT nlohmann_json_FOUND)
   )
 
   FetchContent_MakeAvailable(nlohmann_json)
+endif()
+
+# Find clang-format if available
+find_program(CLANG_FORMAT_EXE NAMES clang-format)
+
+if(CLANG_FORMAT_EXE)
+  file(GLOB_RECURSE ALL_SOURCE_FILES
+    "${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/test/*.cpp")
+
+  add_custom_target(format
+    COMMAND ${CLANG_FORMAT_EXE} -i ${ALL_SOURCE_FILES}
+    COMMENT "Running clang-format on source files"
+  )
 endif()

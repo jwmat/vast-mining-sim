@@ -1,6 +1,11 @@
 name: vast-mining-sim
+channels:
+  - conda-forge
 dependencies:
-  - gtest=1.14
-  - cpplint
-  - nlohmann_json=3.11
+  - python>=3.10
+  - clang-format
+  - cmake
+  - gtest
   - matplotlib
+  - nlohmann_json
+  - pre-commit

@@ -1,34 +1,61 @@
+#include <chrono>  // NOLINT(build/c++11)
+#include <cstdlib>
 #include <iostream>
-#include <sstream>
+#include <string>
 
 #include "controller.h"
-#include "logger.h"
-#include "minutes.h"
+#include "event.h"
 #include "report.h"
 
-constexpr minutes_t kMaxSimTime = 72 * 60min;
+void PrintUsage(const char* program_name) {
+  std::cerr << "Usage: " << program_name
+            << " <num_trucks> <num_stations> [sim_minutes]\n"
+            << "  <num_trucks>     Number of mining trucks (required)\n"
+            << "  <num_stations>   Number of unload stations (required)\n"
+            << "  [sim_minutes]    Duration of simulation in minutes "
+               "(optional, default: 4320)\n";
+}
 
-int main(int argc, char* argv[]) {
+int main(int argc, char** argv) {
   if (argc < 3) {
-    std::ostringstream message;
-    LogAndThrowError<std::invalid_argument>(
-        "Expected input arguments: <num_trucks> <num_stations>");
+    PrintUsage(argv[0]);
+    return EXIT_FAILURE;
   }
 
-  size_t num_trucks = std::stoul(argv[1]);
-  size_t num_stations = std::stoul(argv[2]);
+  size_t num_trucks = 0;
+  size_t num_stations = 0;
+  minutes_t sim_time = 72 * 60min;  // Default: 72 hours
 
-  if (num_trucks == 0 || num_stations == 0) {
-    LogAndThrowError<std::invalid_argument>(
-        "Must provide at least one truck and one station.");
+  try {
+    num_trucks = std::stoul(argv[1]);
+    num_stations = std::stoul(argv[2]);
+    if (argc >= 4) {
+      sim_time = minutes_t(std::stoul(argv[3]));
+    }
+  } catch (const std::exception& e) {
+    std::cerr << "Error: Invalid argument.\n";
+    PrintUsage(argv[0]);
+    return EXIT_FAILURE;
   }
+
+  std::cout << "Running simulation with " << num_trucks << " trucks and "
+            << num_stations << " stations for " << sim_time.count()
+            << " minutes...\n";
 
   Controller controller(num_trucks, num_stations);
-  controller.Run(kMaxSimTime);
+  auto start_time = std::chrono::steady_clock::now();
+  controller.Run(sim_time);
+  auto end_time = std::chrono::steady_clock::now();
+  auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                         end_time - start_time)
+                         .count();
 
-  auto metrics = GenerateMetrics(kMaxSimTime, num_trucks, num_stations);
-  PrintMetrics(metrics);
-  ExportAllEventsToJson(kMaxSimTime);
+  std::cout << "\nSimulation completed in " << duration_ms << " ms\n";
 
-  return 0;
+  auto [truck_metrics, station_metrics] =
+      GenerateMetrics(sim_time, num_trucks, num_stations);
+  ExportMetricsToJson(truck_metrics, station_metrics, sim_time);
+  ExportAllEventsToJson(num_trucks, num_stations, sim_time);
+
+  return EXIT_SUCCESS;
 }

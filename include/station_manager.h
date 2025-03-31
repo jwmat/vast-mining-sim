@@ -15,7 +15,7 @@ class StationManager {
   explicit StationManager(size_t count);
 
   // Returns the next available station (peek only)
-  MinHeap::type NextAvailableStation() const;
+  MinHeap::type GetNextAvailableSlot(minutes_t arrival_time = 0min) const;
 
   // Assigns a truck to unload at a station, logging any wait and the unload
   // event

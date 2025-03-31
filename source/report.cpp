@@ -88,38 +88,72 @@ GenerateMetrics(minutes_t sim_time, size_t num_trucks, size_t num_stations) {
   return {truck_metrics, station_metrics};
 }
 
-// Prints a formatted report of truck and station metrics to the console
-void PrintMetrics(
-    std::pair<std::vector<TruckMetrics>, std::vector<StationMetrics>> metrics) {
-  std::cout << "\n=== Truck Stats ===\n";
-  for (size_t i = 0; i < metrics.first.size(); i++) {
-    auto metric = metrics.first[i];
-    std::cout << "Truck " << i << ":\n"
-              << "  Utilization: " << std::fixed << std::setprecision(2)
-              << metric.utilization << "% \n"
-              << "  Idle Time: " << metric.idle_time << "\n"
-              << "  Trips Completed: " << metric.trips_completed << "\n"
-              << "  Avg Trip Time: " << std::fixed << std::setprecision(2)
-              << metric.avg_trip_time << "\n"
-              << "  Avg Queueing Time: " << std::fixed << std::setprecision(2)
-              << metric.avg_queueing_time << "\n";
+// Exports a formatted report of truck and station metrics to JSON
+void ExportMetricsToJson(const std::vector<TruckMetrics>& trucks,
+                         const std::vector<StationMetrics>& stations,
+                         minutes_t sim_time) {
+  json j;
+  j["simulation_duration"] = sim_time.count();
+
+  for (size_t i = 0; i < trucks.size(); ++i) {
+    const auto& t = trucks[i];
+    j["trucks"].push_back({{"id", i},
+                           {"utilization", t.utilization},
+                           {"idle_time", t.idle_time.count()},
+                           {"trips_completed", t.trips_completed},
+                           {"mines_completed", t.mines_completed},
+                           {"queues_completed", t.queues_completed},
+                           {"mining_time", t.mining_time.count()},
+                           {"queueing_time", t.queueing_time.count()},
+                           {"avg_trip_time", t.avg_trip_time},
+                           {"avg_queueing_time", t.avg_queueing_time}});
   }
 
-  std::cout << "\n=== Station Stats ===\n";
-  for (size_t i = 0; i < metrics.second.size(); i++) {
-    auto metric = metrics.second[i];
-    std::cout << "Station " << i << ":\n"
-              << "  Utilization: " << std::fixed << std::setprecision(2)
-              << metric.utilization << "% \n"
-              << "  Idle Time: " << metric.idle_time << "\n"
-              << "  Throughput: " << metric.throughput << "\n"
-              << "  Avg Queueing Time: " << std::fixed << std::setprecision(2)
-              << metric.avg_queueing_time << "\n";
+  for (size_t i = 0; i < stations.size(); ++i) {
+    const auto& s = stations[i];
+    j["stations"].push_back({{"id", i},
+                             {"utilization", s.utilization},
+                             {"idle_time", s.idle_time.count()},
+                             {"throughput", s.throughput},
+                             {"queues_completed", s.queues_completed},
+                             {"unloading_time", s.unloading_time.count()},
+                             {"queueing_time", s.queueing_time.count()},
+                             {"avg_queueing_time", s.avg_queueing_time}});
   }
+
+  std::ostringstream os;
+  os << "metrics." << trucks.size() << "truck_" << stations.size() << "station_"
+     << sim_time << "_minutes.json";
+  std::ofstream out(os.str());
+  out << std::setw(2) << j << std::endl;
+
+  PrintMetricsSummary(trucks, stations, sim_time);
+}
+
+void PrintMetricsSummary(const std::vector<TruckMetrics>& trucks,
+                         const std::vector<StationMetrics>& stations,
+                         minutes_t sim_time) {
+  double avg_truck_util = 0.0;
+  for (const auto& t : trucks) avg_truck_util += t.utilization;
+  avg_truck_util /= trucks.size();
+
+  double avg_station_util = 0.0;
+  for (const auto& s : stations) avg_station_util += s.utilization;
+  avg_station_util /= stations.size();
+
+  std::cout << "\n=== Simulation Summary ===\n"
+            << "Simulation Time: " << sim_time.count() << " minutes\n"
+            << "Trucks: " << trucks.size() << "\n"
+            << "Stations: " << stations.size() << "\n"
+            << "Average Truck Utilization: " << std::fixed
+            << std::setprecision(2) << avg_truck_util << "%\n"
+            << "Average Station Utilization: " << std::fixed
+            << std::setprecision(2) << avg_station_util << "%\n";
 }
 
 // Exports all events to a JSON file for analysis or visualization
-void ExportAllEventsToJson(minutes_t sim_time) {
+void ExportAllEventsToJson(size_t num_trucks, size_t num_stations,
+                           minutes_t sim_time) {
   json out;
 
   out["simulation_duration"] = sim_time.count();
@@ -140,7 +174,15 @@ void ExportAllEventsToJson(minutes_t sim_time) {
     out["events"].push_back(event_json);
   }
 
+  std::ostringstream os;
+  os << "events." << num_trucks << "_trucks_" << num_stations << "_stations_"
+     << sim_time << ".json";
+
+  std::cout << "\nDetailed metrics for individual trucks and stations can be "
+               "found in "
+            << os.str();
+
   // Write to file with pretty formatting
-  std::ofstream file("events.json");
+  std::ofstream file(os.str());
   file << std::setw(2) << out << std::endl;
 }

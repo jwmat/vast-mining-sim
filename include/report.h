@@ -36,11 +36,18 @@ struct StationMetrics {
 std::pair<std::vector<TruckMetrics>, std::vector<StationMetrics>>
 GenerateMetrics(minutes_t sim_time, size_t num_trucks, size_t num_stations);
 
-// Prints the computed metrics to stdout in a readable format
-void PrintMetrics(
-    std::pair<std::vector<TruckMetrics>, std::vector<StationMetrics>> metrics);
+// Prints the summary metrics to stdout in a readable format
+void PrintMetricsSummary(const std::vector<TruckMetrics>& trucks,
+                         const std::vector<StationMetrics>& stations,
+                         minutes_t sim_time);
+
+// Exports a formatted report of truck and station metrics to JSON
+void ExportMetricsToJson(const std::vector<TruckMetrics>& trucks,
+                         const std::vector<StationMetrics>& stations,
+                         minutes_t sim_time);
 
 // Serializes all events to a JSON file (e.g., for debugging or analysis)
-void ExportAllEventsToJson(minutes_t sim_time);
+void ExportAllEventsToJson(size_t num_trucks, size_t num_stations,
+                           minutes_t sim_time);
 
 #endif  // INCLUDE_REPORT_H_

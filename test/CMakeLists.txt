@@ -9,8 +9,10 @@ function(add_test_executable target)
       GTest::gtest_main
       vast-mining-sim)
 
-  gtest_discover_tests(${target})
+  gtest_discover_tests(${target}
+    EXTRA_ARGS --gtest_color=yes)
 endfunction()
+
 
 add_test_executable(test-controller
   controller.test.cpp)

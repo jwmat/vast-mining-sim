@@ -1,13 +1,16 @@
 #ifndef INCLUDE_MINE_MANAGER_H_
 #define INCLUDE_MINE_MANAGER_H_
 
-#define SEED 0xBEEF
+#ifndef RANDOM_SEED
+#define RANDOM_SEED 0xBEEF
+#endif
 
 #include <queue>
 #include <random>
 #include <vector>
 
 #include "event.h"
+#include "heap.h"
 #include "minutes.h"
 
 // Manages mining operations for trucks.
@@ -23,8 +26,8 @@ class MineManager {
   MineManager(/*size_t num_mines*/);
 
   // Logs a mining event and returns the created Event by reference
-  const Event& MineTruck(size_t truck_id, minutes_t start_time,
-                         minutes_t mine_time);
+  MinHeap::type MineTruck(size_t truck_id, minutes_t start_time,
+                          minutes_t mine_time);
 
   // Returns a random mining duration between min and max bounds
   static minutes_t Duration();

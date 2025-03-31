@@ -7,6 +7,38 @@
 #include "logger.h"
 #include "minutes.h"
 
+struct SimParams {
+  size_t num_trucks;
+  size_t num_stations;
+  minutes_t sim_time;
+};
+
+inline std::ostream& operator<<(std::ostream& os, const SimParams& p) {
+  os << "{ trucks=" << p.num_trucks << ", stations=" << p.num_stations
+     << ", sim_time=" << p.sim_time.count() << "min }";
+  return os;
+}
+
+class TestController_WithParams : public ::testing::TestWithParam<SimParams> {
+ protected:
+  void SetUp() override {
+    // Clear the event log before each run
+    GetEventLogger().GetEvents().clear();
+    // SetLogger(std::make_shared<Logger>());
+  }
+};
+
+INSTANTIATE_TEST_SUITE_P(SimulationVariants, TestController_WithParams,
+                         ::testing::Values(SimParams{30, 10, 1 * 60min},
+                                           SimParams{150, 50, 30 * 60min},
+                                           SimParams{300, 100, 72 * 60min},
+                                           SimParams{300, 5, 1 * 60min},
+                                           SimParams{600, 10, 30 * 60min},
+                                           SimParams{1000, 20, 72 * 60min},
+                                           SimParams{5, 50, 1 * 60min},
+                                           SimParams{20, 100, 30 * 60min},
+                                           SimParams{40, 200, 72 * 60min}));
+
 // Ensures no trucks are dispatched if simulation time is too short
 TEST(TestController, NoTimeToMine) {
   Controller controller(10, 2);
@@ -40,7 +72,7 @@ TEST(TestController, SequenceOfEvents) {
 }
 
 // Verifies that every truck is dispatched to mine at least once
-TEST(TestController, EachTruckMinesAtLeastOnce) {
+TEST_P(TestController_WithParams, EachTruckMinesAtLeastOnce) {
   const size_t num_trucks = 5;
 
   Controller controller(num_trucks, /*num_stations=*/1);
@@ -71,7 +103,7 @@ TEST(TestController, EachTruckMinesAtLeastOnce) {
 }
 
 // Verifies that trucks unload in the same order they finish mining
-TEST(TestController, UnloadOrderMatchesMiningOrder) {
+TEST_P(TestController_WithParams, UnloadOrderMatchesMiningOrder) {
   auto& events = GetEventLogger().GetEvents();
   events.clear();
   ASSERT_EQ(events.size(), 0);  // Sanity check: logger cleared
@@ -100,7 +132,7 @@ TEST(TestController, UnloadOrderMatchesMiningOrder) {
 
 // Verifies that trucks and stations are never scheduled with overlapping
 // events.
-TEST(TestController, TimesDoNotOverlap) {
+TEST_P(TestController_WithParams, TimesDoNotOverlap) {
   size_t num_trucks = 15;
   size_t num_stations = 4;
   auto& events = GetEventLogger().GetEvents();
@@ -114,11 +146,30 @@ TEST(TestController, TimesDoNotOverlap) {
   std::vector<minutes_t> station_times(num_stations, 0min);
 
   for (const auto& event : events) {
-    if (event.station_id) {
-      ASSERT_GE(event.start_time, station_times[event.station_id.value()]);
-      station_times[event.station_id.value()] = event.end_time;
+    if (event.type == EventType::Unload && event.station_id) {
+      auto sid = event.station_id.value();
+      ASSERT_GE(event.start_time, station_times[sid]);
+      station_times[sid] = event.end_time;
     }
-    ASSERT_GE(event.start_time, truck_times[event.truck_id]);
-    truck_times[event.truck_id] = event.end_time;
+
+    // Queue events can overalp
+    if (event.type != EventType::Queue) {
+      ASSERT_GE(event.start_time, truck_times[event.truck_id]);
+      truck_times[event.truck_id] = event.end_time;
+    }
+  }
+}
+
+// Ensures no event starts or ends beyond the simulation time
+TEST_P(TestController_WithParams, NoEventsExceedSimTime) {
+  const auto& params = GetParam();
+  Controller controller(params.num_trucks, params.num_stations);
+  controller.Run(params.sim_time);
+  auto& events = GetEventLogger().GetEvents();
+  for (const auto& event : events) {
+    EXPECT_LE(event.start_time, params.sim_time)
+        << "Event starts after sim_time: " << event;
+    EXPECT_LE(event.end_time, params.sim_time)
+        << "Event ends after sim_time: " << event;
   }
 }

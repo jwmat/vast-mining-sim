@@ -1,4 +1,7 @@
+file(GLOB_RECURSE HEADER_FILES CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/include/*.h")
+
 add_library(vast-mining-sim
+  ${HEADER_FILES} # For MSVC
     controller.cpp
     event.cpp
     logger.cpp

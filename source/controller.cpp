@@ -1,5 +1,7 @@
 #include "controller.h"
 
+#include <cassert>
+
 #include "logger.h"
 
 Controller::Controller(size_t num_trucks, size_t num_stations)
@@ -15,9 +17,9 @@ void Controller::Run(minutes_t sim_time) {
     auto [start_time, truck_id] = truck_manager_->DispatchTruck();
     const auto mine_time = MineManager::Duration();
     if (ExceedsSimTime(start_time, mine_time, sim_time)) continue;
-    const auto& event =
+    const auto [end_time, _] =
         mine_manager_->MineTruck(truck_id, start_time, mine_time);
-    truck_manager_->ReturnTruck(truck_id, event.end_time);
+    truck_manager_->ReturnTruck(truck_id, end_time);
   }
 
   // Step 2: Continue dispatching trucks through complete cycles until time runs
@@ -26,33 +28,40 @@ void Controller::Run(minutes_t sim_time) {
     // Dispatch the truck to the station
     auto [current_time, truck_id] = truck_manager_->DispatchTruck();
 
-    // Travel to station
-    if (ExceedsSimTime(current_time, kTravelTime, sim_time)) continue;
-    LogEvent({EventType::Travel, truck_id, std::nullopt, current_time,
-              current_time + kTravelTime});
-    current_time += kTravelTime;
+    {  // Travel to station
+      if (ExceedsSimTime(current_time, kTravelTime, sim_time)) continue;
+      LogEvent({EventType::Travel, truck_id, std::nullopt, current_time,
+                current_time + kTravelTime});
+      current_time += kTravelTime;
+    }
 
-    // Unload at station
-    if (ExceedsSimTime(current_time, StationManager::kUnloadTime, sim_time))
-      continue;
-    auto [end_time, station_id] =
-        station_manager_->UnloadTruck(truck_id, current_time);
-    current_time = end_time;
+    const auto [available_time, station_id] =
+        station_manager_->GetNextAvailableSlot(current_time);
+    {  // Unload at station
+      if (ExceedsSimTime(available_time, StationManager::kUnloadTime, sim_time))
+        continue;
+      auto [end_time, station_id] =
+          station_manager_->UnloadTruck(truck_id, current_time);
+      current_time = end_time;
+    }
 
-    // Travel back to the mine
-    if (ExceedsSimTime(start_time, kTravelTime, sim_time)) continue;
-    LogEvent({EventType::Travel, truck_id, std::nullopt, end_time,
-              end_time + kTravelTime});
-    current_time += kTravelTime;
+    {  // Travel back to the mine
+      if (ExceedsSimTime(current_time, kTravelTime, sim_time)) continue;
+      LogEvent({EventType::Travel, truck_id, station_id, current_time,
+                current_time + kTravelTime});
+      current_time += kTravelTime;
+    }
 
-    // Begin mining again
-    const auto mine_time = MineManager::Duration();
-    if (ExceedsSimTime(current_time, mine_time, sim_time)) continue;
-    const auto& event =
-        mine_manager_->MineTruck(truck_id, current_time, mine_time);
+    {  // Begin mining again
+      const auto mine_time = MineManager::Duration();
+      if (ExceedsSimTime(current_time, mine_time, sim_time)) continue;
+      const auto [end_time, _] =
+          mine_manager_->MineTruck(truck_id, current_time, mine_time);
+      current_time = end_time;
+    }
 
     // Return the truck to the queue
-    truck_manager_->ReturnTruck(truck_id, event.end_time);
+    truck_manager_->ReturnTruck(truck_id, current_time);
   }
 }
 

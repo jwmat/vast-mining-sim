@@ -14,11 +14,14 @@ StationManager::StationManager(size_t count) {
 }
 
 // Returns the earliest available station without removing it
-MinHeap::type StationManager::NextAvailableStation() const {
+MinHeap::type StationManager::GetNextAvailableSlot(
+    minutes_t arrival_time) const {
   if (queue_.empty()) {
     LogAndThrowError<std::runtime_error>("No stations available.");
   }
-  return queue_.top();
+  auto [available_time, station_id] = queue_.top();
+  const auto start_time = std::max(available_time, arrival_time);
+  return {start_time, station_id};
 }
 
 // Schedules a truck to unload at a station and returns its completion time
