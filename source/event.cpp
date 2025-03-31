@@ -3,6 +3,8 @@
 #include <sstream>
 
 #include "logger.h"
+
+// Formats an Event for output to a stream
 std::ostream& operator<<(std::ostream& os, const Event& event) {
   auto to_string = [](EventType type) -> std::string {
     switch (type) {
@@ -35,6 +37,7 @@ std::ostream& operator<<(std::ostream& os, const Event& event) {
   return os;
 }
 
+// Stores the event and logs it to the logger
 void EventLogger::LogEvent(const Event& event) {
   events_.push_back(event);
   std::ostringstream message;
@@ -43,6 +46,7 @@ void EventLogger::LogEvent(const Event& event) {
 }
 
 const std::vector<Event>& EventLogger::GetEvents() const { return events_; }
+std::vector<Event>& EventLogger::GetEvents() { return events_; }
 
 namespace {
 std::shared_ptr<EventLogger> logger = std::make_shared<EventLogger>();

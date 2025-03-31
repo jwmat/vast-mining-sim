@@ -5,29 +5,31 @@
 #include "event.h"
 #include "logger.h"
 
+// Initializes all trucks as available at time 0
 TruckManager::TruckManager(size_t count) {
+  dispatched_.resize(count, false);
   for (size_t i = 0; i < count; i++) {
-    DispatchTruckToMine(i, 0min, 0min);
+    queue_.push({0min, i});
   }
 }
 
 size_t TruckManager::TrucksAvailable() const { return queue_.size(); }
 
-std::pair<minutes_t, size_t> TruckManager::NextAvailableTruck() {
+// Dispatches the next available truck and marks it as in-use
+MinHeap::type TruckManager::DispatchTruck() {
   if (queue_.empty()) {
-    throw std::runtime_error("No trucks available.");
+    LogAndThrowError<std::runtime_error>("No trucks left in queue.");
   }
-
-  auto next = queue_.top();
-  queue_.pop();
-  return next;
+  auto top = queue_.take();
+  dispatched_[top.second] = true;
+  return top;
 }
 
-minutes_t TruckManager::DispatchTruckToMine(size_t truck_id,
-                                            minutes_t start_time,
-                                            minutes_t mine_time) {
-  auto end_time = start_time + mine_time;
-  LogEvent({EventType::Mine, truck_id, std::nullopt, start_time, end_time});
-  queue_.push({end_time, truck_id});
-  return end_time;
+// Returns a truck to the queue after completing its task
+void TruckManager::ReturnTruck(size_t truck_id, minutes_t time) {
+  if (dispatched_[truck_id] == false) {
+    LogAndThrowError<std::runtime_error>("Truck was not dispatched.");
+  }
+  dispatched_[truck_id] = false;
+  queue_.push({time, truck_id});
 }

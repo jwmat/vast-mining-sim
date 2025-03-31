@@ -1,5 +1,19 @@
 # build directories
 build*/
 
+# macOS system files
+.DS_Store
+
 # VS Code
-.vscode/*
+.vscode/
+
+# JetBrains IDEs (CLion, IntelliJ, etc.)
+.idea/
+
+# EditorConfig
+.editorconfig
+
+# Generic editor swap/backup files
+*~
+*.swp
+*.swo

@@ -1,63 +1,74 @@
 #include "controller.h"
 
-Controller::Controller(size_t num_stations, size_t num_trucks)
+#include "logger.h"
+
+Controller::Controller(size_t num_trucks, size_t num_stations)
     : station_manager_(std::make_unique<StationManager>(num_stations)),
       truck_manager_(std::make_unique<TruckManager>(num_trucks)) {}
 
 void Controller::Run(minutes_t sim_time) {
-  // Initial dispatch of all trucks to mines ensures the truck finished mining
-  // first is dispatched to the station first
-  const auto num_trucks = truck_manager_->TrucksAvailable();
   const auto start_time = 0min;
+  const auto num_trucks = truck_manager_->TrucksAvailable();
+
+  // Step 1: Dispatch all trucks to begin mining
   for (size_t i = 0; i < num_trucks; i++) {
-    const auto mine_time = Random::Duration();
+    auto [start_time, truck_id] = truck_manager_->DispatchTruck();
+    const auto mine_time = MineManager::Duration();
     if (ExceedsSimTime(start_time, mine_time, sim_time)) continue;
-    truck_manager_->DispatchTruckToMine(i, start_time, mine_time);
+    const auto& event =
+        mine_manager_->MineTruck(truck_id, start_time, mine_time);
+    truck_manager_->ReturnTruck(truck_id, event.end_time);
   }
 
-  // We don't want to end the simulation when the first truck hits the time
-  // limit, so we will check to make sure the truck is only placed back into
-  // the queue if it can complete the next phase
+  // Step 2: Continue dispatching trucks through complete cycles until time runs
+  // out
   while (truck_manager_->TrucksAvailable() > 0) {
-    // Check if the truck can travel to the station
-    auto [start_time, truck_id] = truck_manager_->NextAvailableTruck();
-    if (ExceedsSimTime(start_time, kTravelTime, sim_time)) continue;
+    // Dispatch the truck to the station
+    auto [current_time, truck_id] = truck_manager_->DispatchTruck();
 
-    // Put truck on the road
-    LogEvent({EventType::Travel, truck_id, std::nullopt, start_time,
-              start_time + kTravelTime});
-    start_time += kTravelTime;
+    // Travel to station
+    if (ExceedsSimTime(current_time, kTravelTime, sim_time)) continue;
+    LogEvent({EventType::Travel, truck_id, std::nullopt, current_time,
+              current_time + kTravelTime});
+    current_time += kTravelTime;
 
-    // Check if the truck can unload
-    if (ExceedsSimTime(start_time, StationManager::kUnloadTime, sim_time))
+    // Unload at station
+    if (ExceedsSimTime(current_time, StationManager::kUnloadTime, sim_time))
       continue;
-    auto [_, station_id] = station_manager_->NextAvailableStation();
+    auto [end_time, station_id] =
+        station_manager_->UnloadTruck(truck_id, current_time);
+    current_time = end_time;
 
-    // Unload the truck
-    auto unload_time =
-        station_manager_->UnloadTruck(truck_id, start_time + kTravelTime);
+    // Travel back to the mine
+    if (ExceedsSimTime(start_time, kTravelTime, sim_time)) continue;
+    LogEvent({EventType::Travel, truck_id, std::nullopt, end_time,
+              end_time + kTravelTime});
+    current_time += kTravelTime;
 
-    // Check if truck can travel back to the mine
-    if (ExceedsSimTime(unload_time, kTravelTime, sim_time)) continue;
+    // Begin mining again
+    const auto mine_time = MineManager::Duration();
+    if (ExceedsSimTime(current_time, mine_time, sim_time)) continue;
+    const auto& event =
+        mine_manager_->MineTruck(truck_id, current_time, mine_time);
 
-    // Put truck on the road
-    LogEvent({EventType::Travel, truck_id, std::nullopt, unload_time,
-              unload_time + kTravelTime});
-    start_time = unload_time + kTravelTime;
-
-    // Check if truck can finish another mine
-    auto mine_time = Random::Duration();
-    if (ExceedsSimTime(start_time, mine_time, sim_time)) continue;
-
-    // Truck mines
-    truck_manager_->DispatchTruckToMine(truck_id, start_time, mine_time);
+    // Return the truck to the queue
+    truck_manager_->ReturnTruck(truck_id, event.end_time);
   }
 }
 
-bool ControllerExceedsSimTime(minutes_t start_time, minutes_t duration,
-                              minutes_t sim_time) {
+bool Controller::ExceedsSimTime(minutes_t start_time, minutes_t duration,
+                                minutes_t sim_time) {
+  bool exceeds = start_time + duration > sim_time;
+  if (exceeds) {
+    std::ostringstream message;
+    message << "[Time Limit Exceeded] Start Time: " << start_time
+            << ", Duration: " << duration << ", Time Limit: " << sim_time;
+    LogInfo(message.str());
+  }
+
   return start_time + duration > sim_time;
 }
 
+const MineManager& Controller::mine_manager() { return *mine_manager_; }
 const StationManager Controller::station_manager() { return *station_manager_; }
 const TruckManager& Controller::truck_manager() { return *truck_manager_; }

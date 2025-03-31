@@ -4,124 +4,128 @@
 
 #include "event.h"
 
-TEST(TestTruckManager, DispatchOneTruck) {
+// Verifies that a single truck can be dispatched, removed from availability,
+// and returned
+TEST(TestTruckManager, DispatchAndReturnSingleTruck) {
   TruckManager manager(1);
 
-  // Check a truck is available
   ASSERT_EQ(manager.TrucksAvailable(), 1);
-  auto [time1, id1] = manager.NextAvailableTruck();
-  EXPECT_EQ(time1, 0min);
 
-  // Check truck "mines" for duration
-  const minutes_t duration = 100min;
-  manager.DispatchTruckToMine(id1, time1, duration);
+  const auto start_time = 0min;
+  const size_t truck_id = 0;
 
-  auto& events = GetEventLogger().GetEvents();
-  ASSERT_FALSE(events.empty());
+  // Dispatch truck
+  const auto [start_time1, truck_id1] = manager.DispatchTruck();
+  EXPECT_EQ(truck_id, truck_id1);
+  EXPECT_EQ(start_time1, start_time);
 
-  // Check the event is logged correctly
-  const auto& event = events.back();
-  EXPECT_EQ(event.type, EventType::Mine);
-  EXPECT_EQ(event.truck_id, id1);
-  EXPECT_EQ(event.start_time, time1);
-  EXPECT_EQ(event.end_time, time1 + duration);
+  // Truck queue should now be empty
+  EXPECT_EQ(manager.TrucksAvailable(), 0);
+  EXPECT_ANY_THROW(manager.DispatchTruck());
 
-  // Check out queue was populated correctly
-  auto [time2, id2] = manager.NextAvailableTruck();
-  EXPECT_EQ(id2, id1);
-  EXPECT_EQ(time2, time1 + duration);
+  // Return the truck
+  const auto time = 50min;
+  manager.ReturnTruck(truck_id, time);
+  ASSERT_EQ(manager.TrucksAvailable(), 1);
+
+  // Re-dispatch the same truck
+  const auto [start_time2, truck_id2] = manager.DispatchTruck();
+  EXPECT_EQ(truck_id, truck_id2);
+  EXPECT_EQ(start_time2, time);
 }
 
-TEST(TestTruckManager, DispatchTwoTrucks) {
+// Verifies dispatch order and requeue behavior with two trucks
+TEST(TestTruckManager, DispatchAndPrioritizeTwoTrucks) {
   TruckManager manager(2);
-  const minutes_t start = 0min;
-  const minutes_t duration1 = 100min;
+
   ASSERT_EQ(manager.TrucksAvailable(), 2);
+  const auto start_time = 0min;
+  const size_t truck1_id = 0, truck2_id = 1;
 
-  // Dispatch truck1 to mine
-  auto [time1, id1] = manager.NextAvailableTruck();
-  EXPECT_EQ(time1, start);
-  manager.DispatchTruckToMine(id1, time1, duration1);
+  // Dispatch truck 1
+  const auto [start_time1, truck_id1] = manager.DispatchTruck();
+  EXPECT_EQ(truck_id1, truck_id1);
+  EXPECT_EQ(start_time1, start_time);
 
-  auto& events = GetEventLogger().GetEvents();
-  ASSERT_FALSE(events.empty());
+  // Return truck 1 later
+  const auto time1 = 50min;
+  manager.ReturnTruck(truck1_id, time1);
 
-  // Check the event is logged correctly
-  const auto& event1 = events.back();
-  EXPECT_EQ(event1.type, EventType::Mine);
-  EXPECT_EQ(event1.truck_id, id1);
-  EXPECT_EQ(event1.start_time, time1);
-  EXPECT_EQ(event1.end_time, time1 + duration1);
+  // Dispatch truck 2
+  const auto [start_time2, truck_id2] = manager.DispatchTruck();
+  EXPECT_EQ(truck_id2, truck2_id);
+  EXPECT_EQ(start_time2, start_time);
+  EXPECT_EQ(manager.TrucksAvailable(), 1);
 
-  // Next available truck should be truck2 idle at the truck depot
-  auto [time2, id2] = manager.NextAvailableTruck();
-  EXPECT_NE(id1, id2);
-  EXPECT_EQ(time2, start);
+  // Return truck 2 earlier
+  const auto time2 = 10min;
+  manager.ReturnTruck(truck2_id, time2);
+  EXPECT_EQ(manager.TrucksAvailable(), 2);
 
-  // Dispatch truck2 to the mines with a duration shorter than truck1
-  const auto duration2 = duration1 / 2;
-  manager.DispatchTruckToMine(id2, time2, duration2);
+  // Next truck should be truck 2 (earlier return)
+  const auto [start_time3, truck_id3] = manager.DispatchTruck();
+  EXPECT_EQ(truck_id3, truck2_id);
+  EXPECT_EQ(start_time3, time2);
+  EXPECT_EQ(manager.TrucksAvailable(), 1);
 
-  // Check the event is logged correctly
-  const auto& event2 = events.back();
-  EXPECT_EQ(event2.type, EventType::Mine);
-  EXPECT_EQ(event2.truck_id, id2);
-  EXPECT_EQ(event2.start_time, time2);
-  EXPECT_EQ(event2.end_time, time2 + duration2);
-
-  // Next truck should still be the truck2 who finished sooner
-  auto [time3, id3] = manager.NextAvailableTruck();
-  EXPECT_EQ(id3, id2);
-  EXPECT_EQ(time3, time2 + duration2);
-
-  // Redispatch truck2 with a long time;
-  const auto duration3 = duration1 * 2;
-  manager.DispatchTruckToMine(id3, time3, duration3);
-
-  const auto& event3 = events.back();
-  EXPECT_EQ(event3.type, EventType::Mine);
-  EXPECT_EQ(event3.truck_id, id3);
-  EXPECT_EQ(event3.start_time, time3);
-  EXPECT_EQ(event3.end_time, time3 + duration3);
-
-  // Next truck available should be the truck1
-  auto [time4, id4] = manager.NextAvailableTruck();
-  EXPECT_EQ(id4, id1);
-  EXPECT_EQ(time4, time1 + duration1);
+  // Next truck should now be truck 1
+  const auto [start_time4, truck_id4] = manager.DispatchTruck();
+  EXPECT_EQ(truck_id4, truck1_id);
+  EXPECT_EQ(start_time4, time1);
+  EXPECT_EQ(manager.TrucksAvailable(), 0);
 }
 
-TEST(TestTruckManager, NoTrucks) {
+//  Ensures TruckManager correctly reports zero availability when no trucks are
+//  initialized
+TEST(TestTruckManager, NoTrucksAvailable) {
   TruckManager manager(0);
   EXPECT_EQ(manager.TrucksAvailable(), 0);
-  ASSERT_ANY_THROW(manager.NextAvailableTruck());
 }
 
-TEST(TestTruckManager, NextAvailable) {
-  TruckManager truck_manager(2);
+// Ensures that a truck becomes available only at its scheduled return
+TEST(TestTruckManager, ReturnedTruckAvailableAtCorrectTime) {
+  TruckManager manager(1);
 
-  ASSERT_EQ(truck_manager.TrucksAvailable(), 2);
+  const auto [start_time1, truck_id1] = manager.DispatchTruck();
+  const auto return_time = 100min;
+  manager.ReturnTruck(truck_id1, return_time);
 
-  // First available truck (dequeues truck)
-  auto [truck1_start_time, truck1_id] = truck_manager.NextAvailableTruck();
-  EXPECT_EQ(truck1_start_time, 0min);
+  const auto [start_time2, truck_id2] = manager.DispatchTruck();
+  EXPECT_EQ(truck_id2, truck_id1);
+  EXPECT_EQ(start_time2, return_time);
+}
 
-  // Send truck1 to mine (enqueues truck)
-  const auto truck1_mining_time = 31min;
-  const auto truck1_end_time = truck_manager.DispatchTruckToMine(
-      truck1_id, truck1_start_time, truck1_mining_time);
-  EXPECT_EQ(truck1_end_time, truck1_start_time + truck1_mining_time);
+// Ensures trucks are dispatched in order based on their return times
+TEST(TestTruckManager, DispatchOrderRespectsReturnTime) {
+  TruckManager manager(3);
 
-  // Send truck2 to mine with shorter mining duration
-  auto [truck2_start_time, truck2_id] = truck_manager.NextAvailableTruck();
-  EXPECT_EQ(truck2_start_time, 0min);
+  // Dispatch all trucks
+  const auto [start_time1, truck1_id] = manager.DispatchTruck();
+  const auto [start_time2, truck2_id] = manager.DispatchTruck();
+  const auto [start_time3, truck3_id] = manager.DispatchTruck();
 
-  const auto truck2_mining_time = 30min;
-  const auto truck2_end_time = truck_manager.DispatchTruckToMine(
-      truck2_id, truck2_start_time, truck2_mining_time);
-  EXPECT_EQ(truck1_end_time, truck2_start_time + truck1_mining_time);
+  // Return trucks in a shuffled order
+  manager.ReturnTruck(truck1_id, 30min);  // Middle
+  manager.ReturnTruck(truck2_id, 10min);  // Earliest
+  manager.ReturnTruck(truck3_id, 50min);  // Latest
 
-  // Truck 2 should finish first
-  auto [truck3_start_time, truck3_id] = truck_manager.NextAvailableTruck();
-  EXPECT_EQ(truck3_id, truck2_id);
-  EXPECT_EQ(truck3_start_time, truck2_end_time);
+  // Dispatch should follow return time order
+  const auto [start_time4, truck_id4] = manager.DispatchTruck();
+  EXPECT_EQ(truck_id4, truck2_id);
+  EXPECT_EQ(start_time4, 10min);
+
+  const auto [start_time5, truck_id5] = manager.DispatchTruck();
+  EXPECT_EQ(truck_id5, truck1_id);
+  EXPECT_EQ(start_time5, 30min);
+
+  const auto [start_time6, truck_id6] = manager.DispatchTruck();
+  EXPECT_EQ(truck_id6, truck3_id);
+  EXPECT_EQ(start_time6, 50min);
+}
+
+// Ensures that returning a truck that was never dispatched throws an error
+TEST(TestTruckManager, ReturnWithoutDispatchThrows) {
+  TruckManager manager(1);
+  // Attempting to return a truck that was not dispatched should throw
+  EXPECT_THROW(manager.ReturnTruck(0, 100min), std::runtime_error);
 }

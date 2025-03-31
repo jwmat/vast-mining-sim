@@ -5,14 +5,18 @@
 #include <iostream>
 #include <string>
 
+// Captures std::cout for testing console logger output
 class StreamCaptureFixture : public ::testing::Test {
  protected:
   void SetUp() override {
+    SetLogger(std::make_shared<Logger>());  // Use console logger
     streambuf = std::cout.rdbuf();
     std::cout.rdbuf(stream.rdbuf());
   }
 
-  void TearDown() override { std::cout.rdbuf(streambuf); }
+  void TearDown() override {
+    std::cout.rdbuf(streambuf);  // Restore original buffer
+  }
 
   std::string GetOutput() { return stream.str(); }
 
@@ -23,6 +27,9 @@ class StreamCaptureFixture : public ::testing::Test {
 
 using TestLogger = StreamCaptureFixture;
 
+// Tests that log messages at all log levels(INFO, DEBUG, WARNING, ERROR)
+// are correctly printed to the console output stream and include both
+// the expected log level label and message content
 TEST_F(TestLogger, LogsToConsole) {
   LogInfo("This is an info message");
   LogDebug("This is a debug message");

@@ -3,27 +3,26 @@
 
 #include <stddef.h>  // size_t
 
-#include <functional>
-#include <queue>
-#include <utility>
-#include <vector>
-
+#include "event.h"
+#include "heap.h"
 #include "minutes.h"
 
-// Manages station availability
+// Manages a set of unload stations and their availability over time
 class StationManager {
  public:
-  static constexpr minutes_t kUnloadTime = 5min;
+  static constexpr minutes_t kUnloadTime = 5min;  // Time to unload at a station
 
   explicit StationManager(size_t count);
 
-  std::pair<minutes_t, size_t> NextAvailableStation() const;
-  minutes_t UnloadTruck(size_t truck_id, minutes_t arrival_time);
+  // Returns the next available station (peek only)
+  MinHeap::type NextAvailableStation() const;
+
+  // Assigns a truck to unload at a station, logging any wait and the unload
+  // event
+  MinHeap::type UnloadTruck(size_t truck_id, minutes_t arrival_time);
 
  private:
-  std::priority_queue<std::pair<minutes_t, size_t>,
-                      std::vector<std::pair<minutes_t, size_t>>, std::greater<>>
-      queue_;
+  MinHeap queue_;  // Min-heap by station availability time
 };
 
 #endif  // INCLUDE_STATION_MANAGER_H_

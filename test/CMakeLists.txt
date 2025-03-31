@@ -21,8 +21,8 @@ add_test_executable(test-logger
 add_test_executable(test-station-manager
   station_manager.test.cpp)
 
-add_test_executable(test-random 
-  random.test.cpp)
+add_test_executable(test-mine-manager 
+  mine_manager.test.cpp)
 
 add_test_executable(test-truck-manager
   truck_manager.test.cpp)

@@ -3,29 +3,29 @@
 
 #include <stddef.h>  // size_t
 
-#include <functional>
-#include <queue>
-#include <utility>
 #include <vector>
 
+#include "event.h"
+#include "heap.h"
 #include "minutes.h"
 
-// Manages truck availability
+// Manages availability and dispatching of mining trucks
 class TruckManager {
  public:
-  static constexpr minutes_t kTravelTime = 30min;
-
   explicit TruckManager(size_t count);
 
+  // Returns the number of trucks currently available
   size_t TrucksAvailable() const;
-  std::pair<minutes_t, size_t> NextAvailableTruck();
-  minutes_t DispatchTruckToMine(size_t truck_id, minutes_t start_time,
-                                minutes_t mine_time);
+
+  // Removes and returns the next available truck from the queue
+  MinHeap::type DispatchTruck();
+
+  // Returns a truck to the queue with its next available time
+  void ReturnTruck(size_t truck_id, minutes_t time);
 
  private:
-  std::priority_queue<std::pair<minutes_t, size_t>,
-                      std::vector<std::pair<minutes_t, size_t>>, std::greater<>>
-      queue_;
+  MinHeap queue_;                 // Tracks trucks by their availability time
+  std::vector<bool> dispatched_;  // Tracks trucks by their availability time
 };
 
 #endif  // INCLUDE_TRUCK_MANAGER_H_
