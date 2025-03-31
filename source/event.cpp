@@ -21,30 +21,13 @@ std::string EventTypeToString(EventType type) {
 
 // Formats an Event for output to a stream
 std::ostream& operator<<(std::ostream& os, const Event& event) {
-  auto to_string = [](EventType type) -> std::string {
-    switch (type) {
-      case EventType::Travel:
-        return "Travel";
-      case EventType::Mine:
-        return "Mine";
-      case EventType::Queue:
-        return "Queue";
-      case EventType::Unload:
-        return "Unload";
-      default:
-        return "Unknown";
-    }
-  };
-
-  os << "[" << to_string(event.type) << "] "
+  auto event_str = EventTypeToString(event.type);
+  os << "[" << event_str << "] "
      << "[Truck " << event.truck_id << "]";
-
   if (event.station_id.has_value()) {
     os << " [Station " << event.station_id.value() << "]";
   }
-
   os << " Start: " << event.start_time << " End: " << event.end_time;
-
   return os;
 }
 

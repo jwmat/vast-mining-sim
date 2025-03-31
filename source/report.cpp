@@ -54,7 +54,8 @@ GenerateMetrics(minutes_t sim_time, size_t num_trucks, size_t num_stations) {
   for (auto& truck : truck_metrics) {
     truck.idle_time = sim_time - truck.mining_time -
                       truck.trips_completed * Controller::kTravelTime -
-                      (truck.mines_completed - 1) * Controller::kTravelTime -
+                      (truck.mines_completed - 1) *  // No travel for first mine
+                          Controller::kTravelTime -
                       truck.trips_completed * StationManager::kUnloadTime;
     if (truck.trips_completed > 0) {
       truck.avg_trip_time =
