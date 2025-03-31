@@ -8,38 +8,39 @@
 
 #include "minutes.h"
 
+// Aggregated performance stats for a single truck
 struct TruckMetrics {
-  double utilization;   // % of time the truck was doing useful work (mining,
-                        // traveling, unloading) vs total simulation time
-  minutes_t idle_time;  // Total time the truck was waiting (e.g., in queue)
-  size_t
-      trips_completed;  // Number of full mine->travel->unload cycles completed
-  size_t mines_completed;    // Number of times mined
-  size_t queues_completed;   // Number of times queued;
-  minutes_t mining_time;     // Total duration spent mining per cycle
-  minutes_t queueing_time;   // Total time spent queued at a station across all
-                             // unload events
-  double avg_mining_time;    // Mean duration spent mining per cycle
-  double avg_queueing_time;  // Mean ime spent queued at a station across all
-                             // unload events
+  double utilization;        // % of time the truck was doing useful work
+  minutes_t idle_time;       // Total time spent waiting (e.g., in queue)
+  size_t trips_completed;    // Full mine -> travel -> unload cycles completed
+  size_t mines_completed;    // Number of mining operations completed
+  size_t queues_completed;   // Number of times the truck waited in queue
+  minutes_t mining_time;     // Total time spent mining
+  minutes_t queueing_time;   // Total time spent waiting to unload
+  double avg_trip_time;      // Mean duration per full cycle
+  double avg_queueing_time;  // Average wait time per queue event
 };
 
+// Aggregated performance stats for a single unload station
 struct StationMetrics {
-  double utilization;        // % of time the station was busy unloading a truck
-  minutes_t idle_time;       // Time not unloading (available but unused)
-  size_t throughput;         // Number of trucks processed (i.e., unloaded)
-  size_t queues_completed;   // Number of times queued;
-  minutes_t unloading_time;  // Total time spent unloading;
-  minutes_t queueing_time;   // Total time trucks waited to use this station
-  double avg_queueing_time;  // Average time trucks waited to use this station
+  double utilization;        // % of time the station was unloading trucks
+  minutes_t idle_time;       // Total time not unloading
+  size_t throughput;         // Number of trucks unloaded
+  size_t queues_completed;   // Number of trucks that queued at this station
+  minutes_t unloading_time;  // Total time spent unloading
+  minutes_t queueing_time;   // Total time trucks waited for this station
+  double avg_queueing_time;  // Average wait time per truck
 };
 
+// Calculates and returns metrics for all trucks and stations
 std::pair<std::vector<TruckMetrics>, std::vector<StationMetrics>>
 GenerateMetrics(minutes_t sim_time, size_t num_trucks, size_t num_stations);
 
+// Prints the computed metrics to stdout in a readable format
 void PrintMetrics(
     std::pair<std::vector<TruckMetrics>, std::vector<StationMetrics>> metrics);
 
+// Serializes all events to a JSON file (e.g., for debugging or analysis)
 void ExportAllEventsToJson(minutes_t sim_time);
 
 #endif  // INCLUDE_REPORT_H_

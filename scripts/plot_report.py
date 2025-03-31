@@ -49,11 +49,9 @@ def process_events(events, simulation_duration):
             station_stats[station_id]["unload"] += duration
             station_stats[station_id]["unload_count"] += 1
 
-    # Calculate truck efficiency (mining time / simulation duration)
+    # Calculate truck efficiency (active time / total time)
     for stats in truck_stats.values():
-        efficiency = (stats["mine"] + stats["travel"] + stats["unload"]) / (
-            stats["mine"] + stats["travel"] + stats["unload"] + stats["queue"]
-        )
+        efficiency = (stats["mine"] + stats["travel"] + stats["unload"]) / simulation_duration
         truck_efficiency.append(efficiency)
 
     # Calculate station efficiency (unloading time / simulation duration)
@@ -113,13 +111,9 @@ def main():
     # Load events from the JSON file
     data = load_json(args.events)
 
-    # Handle both dict and list formats
     if isinstance(data, dict) and "events" in data:
         simulation_duration = data["simulation_duration"]
         events = data["events"]
-    elif isinstance(data, list):
-        simulation_duration = 72 * 60  # Default duration
-        events = data
     else:
         raise ValueError("Invalid JSON format: expected a list or a dictionary with an 'events' key.")
 
