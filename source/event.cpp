@@ -4,6 +4,21 @@
 
 #include "logger.h"
 
+std::string EventTypeToString(EventType type) {
+  switch (type) {
+    case EventType::Mine:
+      return "Mine";
+    case EventType::Travel:
+      return "Travel";
+    case EventType::Queue:
+      return "Queue";
+    case EventType::Unload:
+      return "Unload";
+    default:
+      return "Unknown";
+  }
+}
+
 // Formats an Event for output to a stream
 std::ostream& operator<<(std::ostream& os, const Event& event) {
   auto to_string = [](EventType type) -> std::string {
@@ -29,10 +44,6 @@ std::ostream& operator<<(std::ostream& os, const Event& event) {
   }
 
   os << " Start: " << event.start_time << " End: " << event.end_time;
-
-  if (event.type == EventType::Queue && event.wait_time.has_value()) {
-    os << " Wait: " << event.wait_time.value() << " min";
-  }
 
   return os;
 }

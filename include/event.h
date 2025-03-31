@@ -4,6 +4,7 @@
 #include <memory>
 #include <optional>
 #include <ostream>
+#include <string>
 #include <vector>
 
 #include "minutes.h"
@@ -12,14 +13,16 @@
 // and debugging
 enum class EventType { Idle = 0, Travel, Mine, Queue, Unload };
 
-// Represents a simulation event involving a truck (and optionally a station)
+std::string EventTypeToString(EventType type);
+
+// Represents a simulation event involving a truck (and optionally a
+// station)
 struct Event {
   EventType type;
   size_t truck_id;
   std::optional<size_t> station_id;
   minutes_t start_time;
   minutes_t end_time;
-  std::optional<minutes_t> wait_time;
 };
 
 // Stream output for logging and debugging

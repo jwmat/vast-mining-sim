@@ -2,3 +2,5 @@ name: vast-mining-sim
 dependencies:
   - gtest=1.14
   - cpplint
+  - nlohmann_json=3.11
+  - matplotlib

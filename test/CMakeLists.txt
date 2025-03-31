@@ -3,7 +3,7 @@ enable_testing()
 function(add_test_executable target)
   add_executable(${target} ${ARGN})
 
-  target_link_libraries(${target} 
+  target_link_libraries(${target}
     PRIVATE
       GTest::gtest
       GTest::gtest_main
@@ -21,7 +21,7 @@ add_test_executable(test-logger
 add_test_executable(test-station-manager
   station_manager.test.cpp)
 
-add_test_executable(test-mine-manager 
+add_test_executable(test-mine-manager
   mine_manager.test.cpp)
 
 add_test_executable(test-truck-manager

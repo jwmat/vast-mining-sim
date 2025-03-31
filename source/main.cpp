@@ -4,6 +4,7 @@
 #include "controller.h"
 #include "logger.h"
 #include "minutes.h"
+#include "report.h"
 
 constexpr minutes_t kMaxSimTime = 72 * 60min;
 
@@ -24,6 +25,10 @@ int main(int argc, char* argv[]) {
 
   Controller controller(num_trucks, num_stations);
   controller.Run(kMaxSimTime);
+
+  auto metrics = GenerateMetrics(kMaxSimTime, num_trucks, num_stations);
+  PrintMetrics(metrics);
+  ExportAllEventsToJson(kMaxSimTime);
 
   return 0;
 }
