@@ -1,116 +1,33 @@
 #include "logger.h"
 
-#include <chrono>  // NOLINT(build/c++11)
-#include <iostream>
-#include <ostream>
-#include <sstream>
+void Logger::Init(std::string filename) {
+  if (initialized_) return;
 
-// Default logger implementation: writes to std::cout
-void Logger::Log(LogLevel level, const std::string& message) {
-  std::string level_str = GetLogLevelString(level);
-  std::string timestamp = GetTimestamp();
-  std::ostringstream log_message;
-
-  log_message << "[" << timestamp << "] [" << level_str << "] " << message;
-
-  std::cout << log_message.str() << std::endl;
-}
-
-// Converts enum LogLevel to a readable string
-std::string Logger::GetLogLevelString(LogLevel level) const {
-  switch (level) {
-    case LogLevel::INFO:
-      return "INFO";
-    case LogLevel::DEBUG:
-      return "DEBUG";
-    case LogLevel::WARNING:
-      return "WARNING";
-    case LogLevel::ERROR:
-      return "ERROR";
-    default:
-      return "UNKNOWN";  // Handles unexpected enum values
-  }
-}
-
-// Returns a formatted timestamp: "YYYY-MM-DD HH:MM:SS"
-std::string Logger::GetTimestamp() const {
-  auto now = std::chrono::system_clock::now();
-  auto time_t_now = std::chrono::system_clock::to_time_t(now);
-  std::tm* local_time = std::localtime(&time_t_now);
-
-  std::ostringstream timestamp;
-  timestamp << std::put_time(local_time, "%Y-%m-%d %H:%M:%S");
-
-  return timestamp.str();
-}
-
-// Returns a timestamp formatted for use in filenames
-std::string FileLogger::GetFileNameTimestamp() {
-  auto now = std::chrono::system_clock::now();
-  std::time_t time_t_now = std::chrono::system_clock::to_time_t(now);
-  std::tm* local_time = std::localtime(&time_t_now);
-
-  std::stringstream timestamp;
-  timestamp << std::put_time(local_time, "%Y-%m-%d_%H-%M-%S");
-  return timestamp.str();
-}
-
-// Opens the log file (uses timestamp-based name if none provided)
-FileLogger::FileLogger(std::string filename) {
   if (filename.empty()) {
-    filename = "log_" + GetFileNameTimestamp() + ".txt";
+    auto now = std::chrono::system_clock::now();
+    std::time_t time_t_now = std::chrono::system_clock::to_time_t(now);
+    std::tm* local_time = std::localtime(&time_t_now);
+
+    std::stringstream timestamp;
+    timestamp << std::put_time(local_time, "%Y-%m-%d_%H-%M-%S");
+    filename = "log_" + timestamp.str() + ".txt";
   }
 
-  file_.open(filename, std::ios::app);
-  if (!file_.is_open()) {
-    throw std::runtime_error("Failed to open log file: " + filename);
-  }
-}
+  // Create async logger with multi-sink (console + file)
+  spdlog::init_thread_pool(8192, 1);  // queue size, thread count
 
-// Closes the log file on destruction
-FileLogger::~FileLogger() {
-  if (file_.is_open()) {
-    file_.close();
-  }
-}
+  auto file_sink =
+      std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename, true);
+  auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
 
-// Writes a log message to the file with timestamp and level
-void FileLogger::Log(LogLevel level, const std::string& message) {
-  std::string level_str = GetLogLevelString(level);
-  std::string timestamp = GetTimestamp();
-  std::ostringstream log_message;
+  std::vector<spdlog::sink_ptr> sinks{console_sink, file_sink};
+  auto logger = std::make_shared<spdlog::async_logger>(
+      "async_logger", sinks.begin(), sinks.end(), spdlog::thread_pool(),
+      spdlog::async_overflow_policy::block);
 
-  log_message << "[" << timestamp << "] [" << level_str << "] " << message;
-  file_ << log_message.str() << std::endl;
-}
+  spdlog::set_default_logger(logger);
+  spdlog::set_level(spdlog::level::info);  // default log level
+  spdlog::set_pattern("[%H:%M:%S.%e] [%^%l%$] %v");
 
-// Global logger instance (initialized with FileLogger)
-namespace {
-std::shared_ptr<Logger> logger = std::make_shared<FileLogger>();
-}
-
-// Returns reference to the current global logger
-Logger& GetLogger() { return *logger; }
-
-// Replaces the global logger with a new one
-void SetLogger(std::shared_ptr<Logger> new_logger) {
-  logger = std::move(new_logger);
-}
-
-// Shorthand functions for logging at each level
-void LogInfo(const std::string& message) {
-  GetLogger().Log(LogLevel::INFO, message);
-}
-
-void LogDebug(const std::string& message) {
-  GetLogger().Log(LogLevel::DEBUG, message);
-}
-
-void LogWarning(const std::string& message) {
-  GetLogger().Log(LogLevel::WARNING, message);
-}
-
-// Convenience helper function for logging error messages
-void LogError(const std::string& message) {
-  GetLogger().Log(LogLevel::ERROR, message);
+  initialized_ = true;
 }

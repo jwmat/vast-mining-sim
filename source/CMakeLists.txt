@@ -5,10 +5,7 @@ add_library(vast-mining-sim
     controller.cpp
     event.cpp
     logger.cpp
-    mine_manager.cpp
-    report.cpp
-    truck_manager.cpp
-    station_manager.cpp)
+    report.cpp)
 
 target_include_directories(vast-mining-sim
     PUBLIC
@@ -16,7 +13,8 @@ target_include_directories(vast-mining-sim
 
 target_link_libraries(vast-mining-sim
     PRIVATE
-        nlohmann_json::nlohmann_json)
+        nlohmann_json::nlohmann_json
+        spdlog::spdlog)
 
 add_executable(main
     main.cpp)

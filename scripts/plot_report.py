@@ -11,10 +11,19 @@ COLOR_SCHEME = {
 }
 
 
-def load_json(path):
-    """Load JSON data from a file."""
+def load_events(path):
+    """Load events from a JSON Lines file."""
+    events = []
     with open(path, "r") as f:
-        return json.load(f)
+        for line in f:
+            line = line.strip()
+            if line:  # skip empty lines
+                try:
+                    event = json.loads(line)
+                    events.append(event)
+                except json.JSONDecodeError as ex:
+                    print("Skipping invalid JSON line:", line)
+    return events
 
 
 def process_events(events, simulation_duration):
@@ -35,7 +44,7 @@ def process_events(events, simulation_duration):
         # Truck stats
         if event_type == "Mine":
             truck_stats[truck_id]["mine"] += duration
-        elif event_type == "Travel":
+        elif event_type == "TravelToStation" or event_type == "TravelToMine" or event_type == "Travel":
             truck_stats[truck_id]["travel"] += duration
         elif event_type == "Queue":
             truck_stats[truck_id]["queue"] += duration
@@ -44,7 +53,7 @@ def process_events(events, simulation_duration):
             truck_stats[truck_id]["trips_completed"] += 1
 
         # Station stats
-        if event_type == "Unload" and "station_id" in e:
+        if event_type == "Unload" and "station_id" in e and e["station_id"] is not None:
             station_id = e["station_id"]
             station_stats[station_id]["unload"] += duration
             station_stats[station_id]["unload_count"] += 1
@@ -81,10 +90,9 @@ def plot_station_efficiency_histogram(station_efficiency, ax):
 
 
 def plot_truck_performance(truck_stats, ax):
-    """Plot truck performance metrics like total mines completed."""
-    total_mines = [stats["trips_completed"] for stats in truck_stats.values()]
-
-    ax.bar(range(len(total_mines)), total_mines, color=COLOR_SCHEME["mining"], edgecolor="black")
+    """Plot truck performance metrics like total trips completed."""
+    total_trips = [stats["trips_completed"] for stats in truck_stats.values()]
+    ax.bar(range(len(total_trips)), total_trips, color=COLOR_SCHEME["mining"], edgecolor="black")
     ax.set_title("Truck Performance: Total Trips Completed")
     ax.set_xlabel("Truck ID")
     ax.set_ylabel("Total Trips")
@@ -94,7 +102,6 @@ def plot_truck_performance(truck_stats, ax):
 def plot_station_performance(station_stats, ax):
     """Plot station performance metrics like total unloads."""
     total_unloads = [stats["unload_count"] for stats in station_stats.values()]
-
     ax.bar(range(len(total_unloads)), total_unloads, color=COLOR_SCHEME["unload"], edgecolor="black")
     ax.set_title("Station Performance: Total Unloads")
     ax.set_xlabel("Station ID")
@@ -105,17 +112,16 @@ def plot_station_performance(station_stats, ax):
 def main():
     """Main function to load data, process events, and plot results."""
     parser = argparse.ArgumentParser()
-    parser.add_argument("--events", help="Path to events.<params>.json")
+    parser.add_argument("--events", help="Path to events.jsonl", required=True)
     args = parser.parse_args()
 
-    # Load events from the JSON file
-    data = load_json(args.events)
+    # Load events from the JSON Lines file
+    events = load_events(args.events)
+    if not events:
+        raise ValueError("No events loaded from file.")
 
-    if isinstance(data, dict) and "events" in data:
-        simulation_duration = data["simulation_duration"]
-        events = data["events"]
-    else:
-        raise ValueError("Invalid JSON format: expected a list or a dictionary with an 'events' key.")
+    # Determine simulation_duration as the maximum end_time among all events
+    simulation_duration = max(e["end_time"] for e in events)
 
     # Process events and gather stats
     truck_stats, station_stats, truck_efficiency, station_efficiency = process_events(events, simulation_duration)
@@ -129,7 +135,7 @@ def main():
     # Plot station efficiency histogram
     plot_station_efficiency_histogram(station_efficiency, axs[0, 1])
 
-    # Plot truck performance (total mines completed)
+    # Plot truck performance (total trips completed)
     plot_truck_performance(truck_stats, axs[1, 0])
 
     # Plot station performance (total unloads)

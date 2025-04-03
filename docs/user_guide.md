@@ -1,100 +1,117 @@
 # User Guide
 
-This guide provides example commands and walkthrough for running the simulator, viewing the output, and interpreting the results.
+This guide provides example commands and walkthroughs for running the simulator, viewing the output, and interpreting the results.
 
 ---
 
 ## Quickstart
 
-After building the project (see README), run the simulator using one of the test or main entry points.
-
-The main executable is run as follows:
+After building the project (see README or Developer Guide), run the simulator using the main executable:
 
 ```bash
 ./main <num_trucks> <num_stations> [sim_minutes]
 ```
 
 ### Example
+
 ```bash
 ./main 30 5 1440
 ```
 
-This runs a 24-hour simulation with 30 trucks and 5 stations.
+This runs a 24-hour simulation (1440 minutes) with 30 trucks and 5 unloading stations.
 
 ---
 
 ## Parameters
 
-| Parameter        | Description                                     | Default       |
-|------------------|-------------------------------------------------|---------------|
-| `num_trucks`     | Number of mining trucks                         | Required      |
-| `num_stations`   | Number of unload stations                       | Required      |
-| `sim_minutes`    | Duration of the simulation (in minutes)         | 4320 (72 hrs) |
+| Parameter      | Description                                 | Default       |
+|----------------|---------------------------------------------|---------------|
+| `num_trucks`   | Number of mining trucks                     | Required      |
+| `num_stations` | Number of unload stations                   | Required      |
+| `sim_minutes`  | Duration of the simulation (in minutes)     | 4320 (72 hrs) |
 
 ---
 
-## Expected Output
+## Output Files
 
-The simulation produces three types of output:
+The simulator generates three primary outputs:
 
-### 1. Console Metrics
-Summarized stats for trucks and stations:
+### 1. Console Summary
+
+A brief performance summary printed to stdout:
 
 ```
 === Simulation Summary ===
 Simulation Time: 4320 minutes
-Trucks: 1000
+Trucks: 10
 Stations: 1
-Average Truck Utilization: 8.77%
-Average Station Utilization: 97.92%
+Average Truck Utilization: 98.30%
+Average Station Utilization: 19.91%
 
-Detailed metrics for individual trucks and stations can be found in metrics.1000truck_1station_4320min.json
+Full metrics report: metrics.10truck_1station_4320min_minutes.json
+
+Simulation completed in 15 ms
 ```
 
-### 2. Logged Metrics
+A hint to the corresponding metrics file is printed at the bottom.
 
-A structured JSON file containing detailed per-truck and per-station metrics such as:
+---
 
-- Total trips/throughput
-- Average queueing and/or mining durations
+### 2. Metrics Report (JSON)
+
+A structured report of per-truck and per-station metrics is saved as:
+
+```
+metrics.<num_trucks>truck_<num_stations>station_<sim_minutes>_minutes.json
+```
+
+Metrics include:
 - Utilization and idle times
+- Number of trips, mines, unloads
+- Total and average times spent mining, traveling, and queueing
 
-This file is ideal for external analysis or batch processing. It is generated automatically at the end of each simulation and saved in the build directory as `metrics.<params>.json`.
+---
 
+### 3. Event Log (JSON Lines Format)
 
-### 3. JSON Event Log
-A structured log of all simulation events saved to `events.<params>.json`:
+Every event (mining, travel, unload, etc.) is logged chronologically in:
+
+```
+events.json
+```
+
+Each line is a JSON object:
 
 ```json
-{
-  "simulation_duration": 4320,
-  "events": [
-    {
-      "type": "Mine",
-      "truck_id": 0,
-      "start_time": 0,
-      "end_time": 180
-    },
-    ...
-  ]
-}
+{"end_time":2211,"start_time":2206,"station_id":6,"truck_id":14,"type":"Unload"}
+{"end_time":2426,"start_time":2206,"station_id":null,"truck_id":97,"type":"Mine"}
+{"end_time":2236,"start_time":2206,"station_id":null,"truck_id":69,"type":"TravelToMine"}
+{"end_time":2236,"start_time":2206,"station_id":null,"truck_id":64,"type":"TravelToMine"}
+{"end_time":2213,"start_time":2208,"station_id":0,"truck_id":60,"type":"Unload"}
+{"end_time":2213,"start_time":2208,"station_id":1,"truck_id":26,"type":"Unload"}
+{"end_time":2239,"start_time":2209,"station_id":null,"truck_id":86,"type":"TravelToStation"}
+{"end_time":2214,"start_time":2209,"station_id":7,"truck_id":30,"type":"Unload"}
 ```
+
+This log is useful for event replay, debugging, or advanced analytics.
 
 ---
 
 ## Visualizing the Output
 
-You can plot utilization and efficiency charts with the Python visualizer:
+A Python visualization tool is provided to plot summary charts:
 
 ```bash
-python ../scripts/plot_report.py --events events.<params>.json
+python scripts/plot_report.py --events events.json
 ```
 
-This generates four plots:
+This generates four charts:
 - Truck Efficiency (active time / sim time)
 - Station Efficiency (unloading time / sim time)
 - Truck Utilization
 - Station Utilization
+
+Ensure your environment includes matplotlib and pandas (see `environment.yml`).
 
 ---
 
@@ -106,6 +123,19 @@ Run a quick simulation with 30 trucks and 5 stations for 24 hours:
 ./main 30 5 1440
 ```
 
-Expected runtime: 9 ms
+Expected runtime: ~15 ms on a modern CPU
 
-Result: JSON files and printed performance stats
+Outputs:
+- `metrics.30truck_5station_1440_minutes.json`
+- `events.json`
+- Console summary
+
+---
+
+## Notes
+
+- All output is deterministic with a fixed seed
+- Run `ctest` from the `build/` directory to verify system behavior
+- You can configure logging verbosity or output filenames in `logger.cpp`
+
+For advanced usage, see the Developer Guide.
