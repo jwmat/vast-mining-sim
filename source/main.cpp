@@ -37,6 +37,7 @@ int main(int argc, char** argv) {
     PrintUsage(argv[0]);
     return EXIT_FAILURE;
   }
+  ClearEvents();
 
   std::cout << "Running simulation with " << num_trucks << " trucks and "
             << num_stations << " stations for " << sim_time.count()
@@ -51,11 +52,6 @@ int main(int argc, char** argv) {
                          .count();
 
   std::cout << "\nSimulation completed in " << duration_ms << " ms\n";
-
-  auto [truck_metrics, station_metrics] =
-      GenerateMetrics(sim_time, num_trucks, num_stations);
-  ExportMetricsToJson(truck_metrics, station_metrics, sim_time);
-  ExportAllEventsToJson(num_trucks, num_stations, sim_time);
 
   return EXIT_SUCCESS;
 }

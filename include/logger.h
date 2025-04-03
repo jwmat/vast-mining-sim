@@ -1,60 +1,46 @@
 #ifndef INCLUDE_LOGGER_H_
 #define INCLUDE_LOGGER_H_
 
-#include <exception>
-#include <fstream>
+#include <spdlog/async.h>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
+
 #include <memory>
 #include <string>
-#include <type_traits>
 
-// Supported log levels (ordered by severity)
-enum class LogLevel { INFO, DEBUG, WARNING, ERROR };
-
-// Base logger interface for writing log messages to console
 class Logger {
  public:
-  virtual ~Logger() = default;
-  virtual void Log(LogLevel level, const std::string& message);
+  static void Init(std::string filename = "");
 
- protected:
-  // Converts LogLevel enum to string label (e.g., "INFO")
-  std::string GetLogLevelString(LogLevel level) const;
+  template <typename T>
+  static void LogTrace(const T& msg) {
+    spdlog::trace("{}", msg);
+  }
 
-  // Returns current timestamp formatted as YYYY-MM-DD HH:MM:SS
-  std::string GetTimestamp() const;
-};
+  template <typename T>
+  static void LogInfo(const T& msg) {
+    spdlog::info("{}", msg);
+  }
 
-// Logger that writes messages to a file
-class FileLogger : public Logger {
- public:
-  explicit FileLogger(std::string filename = "");
-  ~FileLogger();
+  template <typename T>
+  static void LogWarning(const T& msg) {
+    spdlog::warn("{}", msg);
+  }
 
-  void Log(LogLevel level, const std::string& message) override;
+  template <typename T>
+  static void LogError(const T& msg) {
+    spdlog::error("{}", msg);
+  }
 
-  // Returns a timestamp suitable for use in a filename
-  static std::string GetFileNameTimestamp();
+  template <typename E = std::runtime_error, typename T>
+  static void LogAndThrowError(const T& msg) {
+    spdlog::critical("{}", msg);
+    throw E(msg);
+  }
 
  private:
-  std::ofstream file_;
+  static inline bool initialized_ = false;
 };
-
-// Global logger access and override
-Logger& GetLogger();
-void SetLogger(std::shared_ptr<Logger>);
-
-// Convenience wrappers for logging at specific levels
-void LogInfo(const std::string& message);
-void LogDebug(const std::string& message);
-void LogWarning(const std::string& message);
-void LogError(const std::string& message);
-
-// Logs and throws an exception of type ExceptionType
-template <typename ExceptionType, typename = std::enable_if_t<std::is_base_of_v<
-                                      std::exception, ExceptionType>>>
-void LogAndThrowError(const std::string& message) {
-  LogError(message);
-  throw ExceptionType(message);
-}
 
 #endif  // INCLUDE_LOGGER_H_

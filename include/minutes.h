@@ -1,7 +1,7 @@
 #ifndef INCLUDE_MINUTES_H_
 #define INCLUDE_MINUTES_H_
 
-#include <chrono>  // NOLINT(build/c++11)
+#include <chrono>
 
 // Alias for time durations expressed in minutes
 using minutes_t = std::chrono::minutes;

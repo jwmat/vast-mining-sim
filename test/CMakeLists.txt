@@ -17,14 +17,5 @@ endfunction()
 add_test_executable(test-controller
   controller.test.cpp)
 
-add_test_executable(test-logger
-  logger.test.cpp)
-
-add_test_executable(test-station-manager
-  station_manager.test.cpp)
-
-add_test_executable(test-mine-manager
-  mine_manager.test.cpp)
-
-add_test_executable(test-truck-manager
-  truck_manager.test.cpp)
+add_test_executable(test-metrics
+  metrics.test.cpp)

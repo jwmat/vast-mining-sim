@@ -3,50 +3,55 @@
 
 #include <stddef.h>  // size_t
 
-#include <utility>
 #include <vector>
 
 #include "minutes.h"
 
-// Aggregated performance stats for a single truck
+// Aggregated performance statistics for a single truck over the simulation.
 struct TruckMetrics {
-  double utilization;        // % of time the truck was doing useful work
-  minutes_t idle_time;       // Total time spent waiting (e.g., in queue)
-  size_t trips_completed;    // Full mine -> travel -> unload cycles completed
-  size_t mines_completed;    // Number of mining operations completed
-  size_t queues_completed;   // Number of times the truck waited in queue
-  minutes_t mining_time;     // Total time spent mining
-  minutes_t queueing_time;   // Total time spent waiting to unload
-  double avg_trip_time;      // Mean duration per full cycle
-  double avg_queueing_time;  // Average wait time per queue event
+  double utilization = 0.0;     // % of simulation time doing useful work
+  size_t trips_completed = 0;   // Full mine -> travel -> unload cycles
+  size_t mines_completed = 0;   // Individual mining operations
+  size_t queues_completed = 0;  // Number of times the truck queued
+
+  minutes_t idle_time = 0min;       // Time not doing productive work
+  minutes_t mining_time = 0min;     // Time spent mining
+  minutes_t queueing_time = 0min;   // Time spent in unloading queues
+  minutes_t unloading_time = 0min;  // Time spent unloading
+  minutes_t travel_time = 0min;     // Time spent in transit
+
+  double avg_trip_time = 0.0;      // Mean time per trip
+  double avg_queueing_time = 0.0;  // Mean time spent queueing
 };
 
-// Aggregated performance stats for a single unload station
+// Aggregated performance statistics for a single unload station.
 struct StationMetrics {
-  double utilization;        // % of time the station was unloading trucks
-  minutes_t idle_time;       // Total time not unloading
-  size_t throughput;         // Number of trucks unloaded
-  size_t queues_completed;   // Number of trucks that queued at this station
-  minutes_t unloading_time;  // Total time spent unloading
-  minutes_t queueing_time;   // Total time trucks waited for this station
-  double avg_queueing_time;  // Average wait time per truck
+  double utilization = 0.0;     // % of time the station was unloading
+  size_t throughput = 0;        // Number of trucks unloaded
+  size_t queues_completed = 0;  // Queues served at this station
+
+  minutes_t idle_time = 0min;       // Time not unloading
+  minutes_t unloading_time = 0min;  // Cumulative unload duration
+  minutes_t queueing_time = 0min;   // Time trucks spent waiting here
+
+  double avg_queueing_time = 0.0;  // Mean wait time per truck
 };
 
-// Calculates and returns metrics for all trucks and stations
-std::pair<std::vector<TruckMetrics>, std::vector<StationMetrics>>
-GenerateMetrics(minutes_t sim_time, size_t num_trucks, size_t num_stations);
+// Calculates simulation-wide truck and station metrics in-place.
+void GenerateMetrics(minutes_t sim_time, std::vector<TruckMetrics>* trucks,
+                     std::vector<StationMetrics>* stations);
 
-// Prints the summary metrics to stdout in a readable format
+// Outputs an overall summary (e.g., average utilization) to stdout.
 void PrintMetricsSummary(const std::vector<TruckMetrics>& trucks,
                          const std::vector<StationMetrics>& stations,
                          minutes_t sim_time);
 
-// Exports a formatted report of truck and station metrics to JSON
-void ExportMetricsToJson(const std::vector<TruckMetrics>& trucks,
-                         const std::vector<StationMetrics>& stations,
-                         minutes_t sim_time);
+// Exports a detailed report to a JSON file (1 truck/station entry per object).
+void ExportMetricsToJson(minutes_t sim_time,
+                         const std::vector<TruckMetrics>& trucks,
+                         const std::vector<StationMetrics>& stations);
 
-// Serializes all events to a JSON file (e.g., for debugging or analysis)
+// Optional: dump all raw events to a JSON file (not used in your main code).
 void ExportAllEventsToJson(size_t num_trucks, size_t num_stations,
                            minutes_t sim_time);
 

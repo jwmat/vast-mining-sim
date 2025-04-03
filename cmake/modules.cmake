@@ -1,3 +1,5 @@
+include(FetchContent)
+
 find_program(CPPLINT cpplint)
 
 if(CPPLINT)
@@ -35,13 +37,12 @@ if (NOT GTest_FOUND)
 
   add_library(GTest::gtest_main ALIAS gtest_main)
 endif()
-
 include(GoogleTest)
 
 find_package(nlohmann_json CONFIG)
 
 if (NOT nlohmann_json_FOUND)
-  include(FetchContent)
+  message(STATUS "Downloading nlohmann_json...")
 
   FetchContent_Declare(
     nlohmann_json
@@ -65,4 +66,17 @@ if(CLANG_FORMAT_EXE)
     COMMAND ${CLANG_FORMAT_EXE} -i ${ALL_SOURCE_FILES}
     COMMENT "Running clang-format on source files"
   )
+endif()
+
+find_package(spdlog CONFIG)
+
+if (NOT spdlog_FOUND)
+  message(STATUS "Downloading spdlog...")
+  FetchContent_Declare(
+    spdlog
+    GIT_REPOSITORY https://github.com/gabime/spdlog.git
+    GIT_TAG v1.15.2
+  )
+
+  FetchContent_MakeAvailable(spdlog)
 endif()
