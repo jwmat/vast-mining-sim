@@ -10,7 +10,6 @@ This document presents a sample run of the Vast Mining Simulator, showcasing sim
 - Trucks: 100
 - Stations: 10
 - Duration: 72 hours (4320 minutes)
-- Random Seed: Default (`RANDOM_SEED`)
 
 The simulation was run using the following command:
 ```bash

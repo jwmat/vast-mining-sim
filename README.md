@@ -72,10 +72,9 @@ You can configure:
 ## Reproducible Randomness
 
 By default, the mining duration RNG uses a fixed seed (`0xBEEF`).
-You can override it at compile time to create different runs:
 
 ```bash
-cmake -S . -B build -DRANDOM_SEED=1234
+cmake -S . -B build 
 ```
 
 This ensures the simulation is still deterministic for the same seed, which is helpful for testing or comparison.
