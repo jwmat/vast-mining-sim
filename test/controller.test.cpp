@@ -52,6 +52,7 @@ TEST(TestController, SequenceOfEvents) {
   ClearEvents();
   Controller controller(1, 1);
   controller.Run(24 * 60min);
+  WaitUntilFlushed();
 
   const std::vector<EventType> expected_sequence = {
       EventType::Mine,
@@ -77,6 +78,7 @@ TEST(TestController, NoTrucksNoEvents) {
   ClearEvents();
   Controller controller(0, 1);
   controller.Run(60min);
+  WaitUntilFlushed();
   Event event;
   EXPECT_FALSE(ReadEvent(&event));
 }
@@ -86,6 +88,7 @@ TEST(TestController, NoStationsHandledGracefully) {
   ClearEvents();
   Controller controller(10, 0);
   controller.Run(60min);
+  WaitUntilFlushed();
   bool saw_unload = false;
   Event event;
   while (ReadEvent(&event)) {
@@ -100,6 +103,7 @@ TEST_P(TestController_WithParams, EachTruckMinesAtLeastOnce) {
   const size_t num_trucks = 5;
   Controller controller(num_trucks, 1);
   controller.Run(48 * 60min);
+  WaitUntilFlushed();
 
   std::vector<size_t> mine_count(num_trucks, 0);
   size_t unload_count = 0;
@@ -129,6 +133,7 @@ using MinHeap = std::priority_queue<std::pair<minutes_t, Event>,
 TEST_P(TestController_WithParams, UnloadOrderMatchesMiningOrder) {
   Controller controller(10, 1);
   controller.Run(72 * 60min);
+  WaitUntilFlushed();
 
   MinHeap mining_order;
   MinHeap unloading_order;
@@ -156,6 +161,7 @@ TEST_P(TestController_WithParams, TimesDoNotOverlap) {
 
   Controller controller(num_trucks, num_stations);
   controller.Run(10 * 60min);
+  WaitUntilFlushed();
 
   std::vector<minutes_t> truck_times(num_trucks, 0min);
   std::vector<minutes_t> station_times(num_stations, 0min);
@@ -179,11 +185,12 @@ TEST_P(TestController_WithParams, NoEventsExceedSimTime) {
   const auto& params = GetParam();
   Controller controller(params.num_trucks, params.num_stations);
   controller.Run(params.sim_time);
+  WaitUntilFlushed();
 
   Event event;
   while (ReadEvent(&event)) {
-    EXPECT_LE(event.start_time, params.sim_time) <<
-        "Start time exceeds sim time: " << event;
+    EXPECT_LE(event.start_time, params.sim_time)
+        << "Start time exceeds sim time: " << event;
     EXPECT_LE(event.end_time, params.sim_time)
         << "End time exceeds sim time: " << event;
     if (event.type == EventType::Queue) {
@@ -196,6 +203,7 @@ TEST(TestController, NoTruckOrStationOverlaps) {
   ClearEvents();
   Controller controller(/*num_trucks=*/25, /*num_stations=*/4);
   controller.Run(48 * 60min);
+  WaitUntilFlushed();
 
   std::unordered_map<size_t, std::vector<std::pair<minutes_t, minutes_t>>>
       truck_events;

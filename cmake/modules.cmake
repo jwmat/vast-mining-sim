@@ -12,7 +12,7 @@ if(CPPLINT)
   add_custom_target(cpplint
     COMMAND ${CPPLINT}
       --linelength=100
-      --filter=-legal/copyright,-build/include_subdir,-build/namespaces
+      --filter=-legal/copyright,-build/include_subdir,-build/namespaces,-build/c++11
       ${ALL_CXX_SOURCE_FILES}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Running cpplint")

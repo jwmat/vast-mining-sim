@@ -6,6 +6,7 @@
 #include <mutex>
 #include <optional>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "minutes.h"
@@ -46,6 +47,12 @@ class EventLogger {
   // Appends a single event to the log (in JSON Lines format).
   void LogEvent(const Event& event);
 
+  // Writes buffered events to disk and clears the buffer
+  void FlushBuffer();
+
+  // Waits for the background flush thread to finish flushing
+  void WaitUntilFlushed();
+
   // Reads the next event from the log (returns false if no more).
   bool ReadNextEvent(Event* event);
 
@@ -56,6 +63,10 @@ class EventLogger {
   std::string filename_;
   std::ofstream ofs_;
   std::ifstream ifs_;
+  std::vector<Event> buffer_;
+  std::thread flush_thread_;
+  std::mutex buffer_mutex_;
+  std::atomic<bool> done_;
 
   void CloseStreams();  // Internal cleanup
 };
@@ -67,5 +78,6 @@ EventLogger& GetEventLogger();
 void LogEvent(const Event& event);
 bool ReadEvent(Event* event);
 void ClearEvents();
+void WaitUntilFlushed();
 
 #endif  // INCLUDE_EVENT_H_

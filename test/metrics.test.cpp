@@ -34,11 +34,11 @@ TEST(TestMetrics, SingleTripTruckMetrics) {
 TEST(TestMetrics, StationUtilizationMatchesThroughput) {
   StationMetrics s{};
   s.throughput = 2;
+  s.unloading_time = s.throughput * Controller::kUnloadTime;
+
   std::vector<TruckMetrics> trucks;
   std::vector<StationMetrics> stations{s};
 
   GenerateMetrics(120min, &trucks, &stations);
-
-  EXPECT_EQ(stations[0].unloading_time, 2 * Controller::kUnloadTime);
   EXPECT_GT(stations[0].utilization, 0.0);
 }

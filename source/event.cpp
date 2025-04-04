@@ -1,11 +1,11 @@
 #include "event.h"
 
-#include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
 #include <vector>
 
 #include "logger.h"
+#include "nlohmann/json.hpp"
 
 using json = nlohmann::json;
 
@@ -90,7 +90,7 @@ Event JsonToEvent(const json& j) {
   return event;
 }
 
-// Constructor: opens output stream in append mode for logging
+// Initializes the EventLogger with a flush thread and opens output file
 EventLogger::EventLogger(const std::string& filename) : filename_(filename) {
   ofs_.open(filename, std::ios::app);
   if (!ofs_.is_open()) {
@@ -98,16 +98,49 @@ EventLogger::EventLogger(const std::string& filename) : filename_(filename) {
     throw std::runtime_error("Unable to open log file for writing: " +
                              filename);
   }
+  flush_thread_ = std::thread([this] {
+    while (!done_.load()) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      FlushBuffer();  // Periodically flush buffered events to disk
+    }
+    FlushBuffer();  // Final flush on shutdown
+  });
 }
 
-// Destructor closes both input and output streams
-EventLogger::~EventLogger() { CloseStreams(); }
+// Gracefully stops the background flush thread and closes files
+EventLogger::~EventLogger() {
+  done_ = true;
+  if (flush_thread_.joinable()) flush_thread_.join();
+  CloseStreams();
+}
 
-// Logs a single event to the file (JSON lines) and trace logs
+// Adds an event to the buffer, logs trace output
 void EventLogger::LogEvent(const Event& event) {
-  ofs_ << EventToJson(event).dump() << "\n";
-  ofs_.flush();
+  std::lock_guard<std::mutex> lock(buffer_mutex_);
+  buffer_.push_back(event);
   Logger::LogTrace(event.to_string());
+}
+
+// Writes buffered events to disk and clears the buffer
+void EventLogger::FlushBuffer() {
+  std::lock_guard<std::mutex> lock(buffer_mutex_);
+  for (const auto& e : buffer_) {
+    ofs_ << EventToJson(e).dump() << "\n";
+  }
+  buffer_.clear();
+  ofs_.flush();
+}
+
+// Waits for the background flush thread to finish flushing
+void EventLogger::WaitUntilFlushed() {
+  FlushBuffer();
+  while (true) {
+    {
+      std::lock_guard<std::mutex> lock(buffer_mutex_);
+      if (buffer_.empty()) break;
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
 }
 
 // Reads the next event from file, skipping blank lines
@@ -142,8 +175,9 @@ void EventLogger::ClearEvents() {
   }
 }
 
-// Closes file streams if open
+// Flushes and closes both input/output streams
 void EventLogger::CloseStreams() {
+  FlushBuffer();
   if (ofs_.is_open()) {
     ofs_.flush();
     ofs_.close();
@@ -164,3 +198,4 @@ EventLogger& GetEventLogger() { return *logger; }
 void LogEvent(const Event& event) { GetEventLogger().LogEvent(event); }
 bool ReadEvent(Event* event) { return GetEventLogger().ReadNextEvent(event); }
 void ClearEvents() { GetEventLogger().ClearEvents(); }
+void WaitUntilFlushed() { GetEventLogger().WaitUntilFlushed(); }

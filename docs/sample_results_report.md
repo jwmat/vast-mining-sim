@@ -34,7 +34,9 @@ Stations: 10
 Average Truck Utilization: 98.10%
 Average Station Utilization: 19.95%
 
-Simulation completed in 127 ms
+Full metrics report: metrics.100truck_10station_4320min_minutes.json
+
+Simulation completed in 35 ms
 ```
 
 `metrics.<params>.json`:

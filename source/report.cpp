@@ -41,7 +41,6 @@ void GenerateMetrics(minutes_t sim_time,
           static_cast<double>(s.queueing_time.count()) / s.queues_completed;
     }
 
-    s.unloading_time = s.throughput * Controller::kUnloadTime;
     s.idle_time = sim_time - s.unloading_time;
     s.utilization = static_cast<double>(s.unloading_time.count()) /
                     static_cast<double>(sim_time.count()) * 100.0;

@@ -26,7 +26,7 @@ void Logger::Init(std::string filename) {
       spdlog::async_overflow_policy::block);
 
   spdlog::set_default_logger(logger);
-  spdlog::set_level(spdlog::level::info);  // default log level
+  spdlog::set_level(spdlog::level::warn);
   spdlog::set_pattern("[%H:%M:%S.%e] [%^%l%$] %v");
 
   initialized_ = true;

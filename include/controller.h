@@ -14,23 +14,11 @@
 // StationQueue manages station availability scheduling using a min-heap
 class StationQueue {
  public:
-  void Initialize(size_t num_stations) {
-    for (size_t i = 0; i < num_stations; ++i) {
-      queue_.emplace(0min, i);
-    }
-  }
+  void Initialize(size_t num_stations);
 
-  bool Empty() const { return queue_.empty(); }
-
-  std::pair<minutes_t, size_t> PopNextAvailable() {
-    auto entry = queue_.top();
-    queue_.pop();
-    return entry;
-  }
-
-  void MarkAvailable(minutes_t time, size_t station_id) {
-    queue_.emplace(time, station_id);
-  }
+  bool Empty() const;
+  std::pair<minutes_t, size_t> PopNextAvailable();
+  void MarkAvailable(minutes_t time, size_t station_id);
 
  private:
   std::priority_queue<std::pair<minutes_t, size_t>,

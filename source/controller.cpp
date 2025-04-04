@@ -5,6 +5,24 @@
 
 #include "logger.h"
 
+void StationQueue::Initialize(size_t num_stations) {
+  for (size_t i = 0; i < num_stations; ++i) {
+    queue_.emplace(0min, i);
+  }
+}
+
+bool StationQueue::Empty() const { return queue_.empty(); }
+
+std::pair<minutes_t, size_t> StationQueue::PopNextAvailable() {
+  auto entry = queue_.top();
+  queue_.pop();
+  return entry;
+}
+
+void StationQueue::MarkAvailable(minutes_t time, size_t station_id) {
+  queue_.emplace(time, station_id);
+}
+
 // Constructor initializes number of trucks, stations, and RNG seed
 Controller::Controller(size_t num_trucks, size_t num_stations,
                        size_t random_seed)
@@ -74,6 +92,10 @@ void Controller::ProcessEvent(minutes_t start_time, const Event& event) {
       Mine(truck_id, start_time);
       break;
     }
+    default: {
+      Logger::LogError("Unrecognized event type!");
+      break;
+    }
   }
 }
 
@@ -129,7 +151,6 @@ void Controller::UnloadTruck(size_t truck_id, minutes_t start_time) {
     const auto end_time = start_time + kUnloadTime;
     EmitEvent(EventType::Unload, truck_id, station_id, start_time, end_time);
     station_queue_.MarkAvailable(end_time, station_id);
-    
 
     // Update metrics
     trucks_metrics_[truck_id].trips_completed++;

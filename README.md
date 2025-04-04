@@ -74,7 +74,7 @@ You can configure:
 By default, the mining duration RNG uses a fixed seed (`0xBEEF`).
 
 ```bash
-cmake -S . -B build 
+cmake -S . -B build
 ```
 
 This ensures the simulation is still deterministic for the same seed, which is helpful for testing or comparison.
