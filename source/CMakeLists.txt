@@ -12,9 +12,10 @@ target_include_directories(vast-mining-sim
         ${PROJECT_SOURCE_DIR}/include)
 
 target_link_libraries(vast-mining-sim
+    PUBLIC
+        spdlog::spdlog
     PRIVATE
-        nlohmann_json::nlohmann_json
-        spdlog::spdlog)
+        nlohmann_json::nlohmann_json)
 
 add_executable(main
     main.cpp)

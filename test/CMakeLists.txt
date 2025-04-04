@@ -8,9 +8,16 @@ function(add_test_executable target)
       GTest::gtest
       GTest::gtest_main
       vast-mining-sim)
+  
+  if(NOT WIN32)
+    set_target_properties(${target} PROPERTIES
+      BUILD_RPATH "$<TARGET_FILE_DIR:GTest::gtest>"
+      INSTALL_RPATH "$<TARGET_FILE_DIR:GTest::gtest>"
+    )
+  endif()
 
-  gtest_discover_tests(${target}
-    EXTRA_ARGS --gtest_color=yes)
+  add_test(NAME ${target}
+         COMMAND $<TARGET_FILE:${target}> --gtest_color=yes)
 endfunction()
 
 

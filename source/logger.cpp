@@ -1,5 +1,7 @@
 #include "logger.h"
 
+#include <iomanip>
+
 void Logger::Init(std::string filename) {
   if (initialized_) return;
 
