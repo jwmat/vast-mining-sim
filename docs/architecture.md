@@ -28,10 +28,10 @@ The simulator models a lunar Helium-3 mining operation with trucks, mining sites
 - Internally uses `std::default_random_engine` seeded with a fixed value for reproducibility
 
 ### EventLogger
--- Centralized event recording system.
--- Captures all truck activities: mining, traveling, queuing, and unloading
--- Events include start and end times, truck id, and optionally station id
--- Supports retrieval for analysis or metrics generation
+- Centralized event recording system.
+- Captures all truck activities: mining, traveling, queuing, and unloading
+- Events include start and end times, truck id, and optionally station id
+- Supports retrieval for analysis or metrics generation
 
 ### Metrics / Report Generator
 - Aggregates event data to compute per-truck and per-station performance metrics
