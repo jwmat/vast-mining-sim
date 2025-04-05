@@ -65,21 +65,9 @@ You can configure:
 
 - Number of trucks and stations
 - Simulation duration (in minutes)
-- Random seed
 
 ---
 
-## Reproducible Randomness
-
-By default, the mining duration RNG uses a fixed seed (`0xBEEF`).
-
-```bash
-cmake -S . -B build
-```
-
-This ensures the simulation is still deterministic for the same seed, which is helpful for testing or comparison.
-
----
 
 ## Output & Reporting
 
@@ -95,5 +83,5 @@ Simulation results include:
 You can visualize the simulation results using the included Python script:
 
 ```bash
-python ../scripts/plot_report.py --events events.<params>.json
+python ../scripts/plot_report.py --events events.json
 ```
