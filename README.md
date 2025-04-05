@@ -73,7 +73,7 @@ You can configure:
 
 Simulation results include:
 
-- A full timeline of simulation events, useful for playback or visual debugging: `events.<params>.json`
+- A full timeline of simulation events, useful for playback or visual debugging: `events.json`
 - A detailed breakdown of per-truck and per-station performance metrics (generated after each run): `metrics.<params>.json`
 - Console summary:
   - Simulation parameters (e.g., trucks, stations, duration)
