@@ -87,13 +87,13 @@ Each full truck cycle (mine → travel → queue → unload → travel → retur
 | Operation                    | Complexity     | Notes                                     |
 |------------------------------|----------------|-------------------------------------------|
 | Mining + Travel Scheduling   | O(1)           | Constant time, includes RNG               |
-| Event Queue Push             | O(log C)       | Cumulative due to priority queue          |
+| Event Queue Push             | O(log N)       | Cumulative due to priority queue          |
 | Station selection            | O(1)           | Min-heap top peek                         |
 | Requeue station              | O(log M)       | After unloading                           |
 
-**Total per cycle: O(log M + log C)**
+**Total per cycle: O(log M + log N)**
 
-**Overall runtime: O(C × (log M + log C))**
+**Overall runtime: O(C × (log M + log N))**
 
 ---
 
